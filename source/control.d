@@ -303,10 +303,8 @@ public:
 					//#Hmmm
 					if (st > ed) {
 						ed = st;
-						//writeln("*this* Error: (", line, ')');
 					} else {
 						result ~= line[st .. ed]; // superceeded(sp)
-						//mixin(trace("line[st .. ed]"));
 						st = ed + 1;
 
 						if (ed >= line.length) {
@@ -338,7 +336,6 @@ public:
 			if (ed == line.length) {
 				return;
 			}
-			//if (ced.isAlphaNum() || ced == '"') {
 			if (ced.isAlphaNum())
 			    sw = Switch.alphaNum;
 
