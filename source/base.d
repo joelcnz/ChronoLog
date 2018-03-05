@@ -40,9 +40,11 @@ enum TaskType {possibles, // list you choose from, done
 */
 enum Collum {left, right, straitDown};
 
-const VERSION = `(Friday 11 3 2016). Noticed a random crash (with saving I think) :-\ 19.12.2014 => Also, not using 'fc' then"
-	"sd has a weid effect, maybe some thing to do with 12 month I don't think 'cls' works for text tank "
-		"(eg instead put eg lt109 and save the tank, this avoids repeats.)"`;
+const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the categories, but another mixing problem! (left, right, strait down)."`;
+//const VERSION = `Saturday sd"17.2.2018" >6pm - More done with GUI. Can't seem to get 0 - Bible to display in view categories!`;
+//const VERSION = `(Friday 11 3 2016). Noticed a random crash (with saving I think) :-\ 19.12.2014 => Also, not using 'fc' then"
+//	"sd has a weid effect, maybe some thing to do with 12 month I don't think 'cls' works for text tank "
+//		"(eg instead put eg lt109 and save the tank, this avoids repeats.)"`;
 //const VERSION = `Thursday sd"11 9 2014" c"Looks like user input (as aposed to from a file) is working too."`;
 //const VERSION = `Sunday sd"7 9 2014" c"Now can use it again. Still stuff doesn't work though."`;
 //const VERSION = `Saturday sd"19 4 2014 - got some where"`;
@@ -105,9 +107,7 @@ void processCategory(ref TaskMan taskMan) {
 	static int getNum(in string str) {
 		auto s = str.split()[0];
 
-		//if (s.length) {
-			return s.to!int();
-		//}
+		return s.to!int();
 	}
 
 	string getLabel(in string str) {
@@ -147,8 +147,6 @@ void tasksHidden(ref TaskMan taskMan, int remove = -1) {
 			taskMan.addHidden(buf[0 .. 3].to!int, buf[4 .. $].idup);
 		}
 	}
-	
-	f.close;
 	
 	if (remove != -1) {
 		taskMan.saveHidden("taskshidden.txt");

@@ -47,18 +47,34 @@ public:
 		string cformat() { return _cformat; }
 	}
 
-	auto listFoundText(in string phrase) {
+	auto listFoundText(in string phrase, in bool isWordSearch = false) {
+		import std.algorithm: canFind, all;
+		import std.string : indexOf, split;
+
 		string result;
 
 		int numberOfItem = 1; //#redundant, why not use cast(int)(i + 1)
-		
-		foreach ( i, task; _doneTasks ) {
-			if ( std.string.indexOf(task.comment(), phrase) != -1 ) {
-				immutable tex = task.viewInfo( numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
+
+		foreach(i, task; _doneTasks) {
+			if ((! isWordSearch && indexOf(task.comment(), phrase) != -1) ||
+				(isWordSearch && phrase.split.all!(word => task.comment.canFind(word)))) {
+				immutable tex = task.viewInfo(numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat);
 				_textTank ~= tex;
 				result ~= tex;
 				numberOfItem++;
 			}
+		}
+
+		return result;
+	}
+
+	auto getRange(int start, int end) {
+		string result = "\n";
+
+		foreach(i, task; _doneTasks[start .. end + 1]) {
+			immutable tex = task.viewInfo(cast(int)i, cast(int)(start + i), Collum.straitDown, TaskType.done, _cformat);
+			_textTank ~= tex;
+			result ~= tex;
 		}
 
 		return result;
@@ -155,6 +171,14 @@ public:
 	{
 		return _possibleTasks.length;
 	}
+
+	auto clearStEdL() {
+		_doneTasks[ _selectedTaskIndex ].displayTimeFlag = false;
+		_doneTasks[ _selectedTaskIndex ].displayEndTimeFlag = false;
+		_doneTasks[ _selectedTaskIndex ].setTimeLength(TimeLength(0,0,0));
+
+		return "clearedStEdL";
+	}
 	
 	/// set the time of day
 	auto setTime(int hour, int minute,int second) {
@@ -235,7 +259,7 @@ public:
 	
 	void setTaskIndex(in int index)
 	{
-		if ( index < 0 || index > _doneTasks.length)
+		if ( index < 0 || index >= _doneTasks.length)
 		{
 			writeln("value for index is out of bounds in _doneTasks. (", index, ")");
 			return;
@@ -251,9 +275,11 @@ public:
 	}
 	
 	/// Add some thing said about the log entry (eg. comment)
-	void setComment(string comment)
+	auto setComment(string comment)
 	{
 		_doneTasks[_selectedTaskIndex].setComment(comment);
+
+		return comment;
 	}
 	
 	void viewLast() {
@@ -327,8 +353,9 @@ public:
 				switch(format) {
 					default: break;
 					case 0:
-						bool isDevOfTwo() { return displayTasks.length % 2; }
-						foreach ( i; 0 .. displayTasks.length / 2 + ( isDevOfTwo ? 1 : 0 ) ) {
+						//bool isDevOfTwo() { return displayTasks.length % 2; }
+						//foreach ( i; 0 .. displayTasks.length / 2 + ( isDevOfTwo ? 1 : 0 ) ) {
+						foreach ( i; 0 .. (displayTasks.length + (displayTasks.length % 2 == 0 ? 0 : 1)) / 2) {
 							result ~= displayTasks[ i ].viewInfo(
 								0,
 								index[i],
@@ -460,9 +487,9 @@ public:
 		tmbb.loadDoneTasksbb( filename );
 		foreach( taskbb; tmbb.tasksbb ) {
 			with( taskbb )
-				_doneTasks ~= new Task( id, taskString, timeLength, comment
-				, dateTime, displayStartTimeFlag
-				, endTime, displayEndTimeFlag );
+				_doneTasks ~= new Task( id, taskString, timeLength, comment,
+				dateTime, displayStartTimeFlag,
+				endTime, displayEndTimeFlag );
 		}
 	}
 	

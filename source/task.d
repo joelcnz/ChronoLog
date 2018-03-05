@@ -50,7 +50,7 @@ public:
 	}
 	
 	/// task constructor sets task with current date and time
-	this(DateTime dateTime = DateTime(2000,1,1), int id = 0, string taskString = "")
+	this(DateTime dateTime = DateTime(1979,1,1), int id = 0, string taskString = "")
 	{
 		_id = id;
 		_taskString = taskString;
@@ -59,6 +59,10 @@ public:
 		//_dateTime = getCurrentTimeNDate; // code is clear enough on this mater I dear to think.
 		//_dateTime = cast(DateTime)toLocalTime();
 		_dateTime = dateTime; // cast(DateTime)Clock.currTime();
+		if (dateTime == DateTime(1979,1,1)) {
+			//_dateTime = cast(DateTime)Clock.currTime();
+			_dateTime = DateTime(1979,1,1, 12,0,0);
+		}
 		//_dateTime.second = 0; //#was 66, but that's invalid these days
 		
 		_displayTimeFlag = false; //#Need a thing for user to turn it on and off
@@ -66,7 +70,7 @@ public:
 	}
 	
 	// setAll
-	this(int  id0, string taskString0, TimeLength length0, string comment0, DateTime dateTime0,
+	this(int id0, string taskString0, TimeLength length0, string comment0, DateTime dateTime0,
 		  bool displayTimeFlag0, DateTime endTime0, bool displayEndTimeFlag0) {
 		_id = id0;
 		_taskString = taskString0;
@@ -95,7 +99,7 @@ public:
 		try {
 			with( _dateTime )
 				_dateTime = DateTime(year0, month0, day0, hour, minute, second); //#maybe 0, 0, 0 for the tod
-		} catch(Error e) {
+		} catch(Exception e) {
 			throw new Exception("Some thing wrong!");
 		}
 	}
@@ -167,18 +171,24 @@ public:
 					//writecln( _altColour == true ? Color.green : Color.yellow, doneString( indexNumber ) );
 					//#the line of dashes is stink
 					import std.range: repeat;
-					import  std.conv: to;
+					import std.conv: to;
 					result = doneString(bullitNumber, indexNumber) ~ "\n"; // ~ 
 					//	"-----------------"
 					result ~= '-'.repeat(20).to!string;
 					result ~= "\n";
-					write(result); std.stdio.stdout.flush();
+
+					//#crashes in Windows (when no output in the command line)
+					version(OSX) {
+						write(result); std.stdio.stdout.flush();
+					}
 					//writeln(doneString( indexNumber ));
 					//writeln("----------------");
 					//_altColour = ! _altColour;
 				} else {
 					result = doneString(bullitNumber, indexNumber, cformat);
-					write(result); std.stdio.stdout.flush();
+					version(OSX) {
+						write(result); std.stdio.stdout.flush();
+					}
 					//writeln(doneString(indexNumber, cformat));
 				}
 			break;
@@ -189,9 +199,6 @@ public:
 							collum == Collum.right ? "\n" : "" );
 				result ~= format(["%3s - %-33s%s", "%3s - %s%s"][collum], id, taskString, collum == Collum.right ? "\n" : "");
 			break;
-//			default:
-//				assert(false, "Not done or possibles");
-//			break;
 		} // switch
 		
 		return result;
@@ -281,9 +288,8 @@ public:
 						//split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday Someday")[weekday],
 						split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday Someday")[ _dateTime.dayOfWeek ],
 						day, month.to!string()[0..1].toUpper() ~ month.to!string()[1..$], year,
-						hourMinSecStr, endHourMinSecStr, // see above for formating of these strings
-						_comment != "" ? format(`%s`, _comment) : "",
-						timeLength);
+						hourMinSecStr, endHourMinSecStr, timeLength, // see above for formating of these strings
+						_comment != "" ? format(`%s`, _comment) : "");
 			}
 		}
 	}

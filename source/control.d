@@ -1,3 +1,11 @@
+//#may change it to 'ErroR:' and edit all the connected stuff
+//#Why didn't this trigger when I tested it?!
+//#untested 11 2 2018 - this is need for parsing commandfile.txt
+//#process text file not supported any more
+//#need better than startWith
+//#don't understand set up here
+//#I got a crash, I don't know how?!
+//#shouldn't need try..catch
 //#need to be able to do like this - eg. `r"0 1 2"` to wipe three off
 //#I don't know what's supposed to happen here
 //#E.g. if you miss c for comment ("got up") it just ignores it, it should abort
@@ -151,16 +159,19 @@ private
 	import std.path;
 	import std.process;
 
-	import arsd.terminal;
+//	import arsd.terminal;
 //	import dunit;
 	import jmisc;
 	import jtask.basebb;
-	import base, gui, main, taskman, task;
+	import base, gui, taskman, task; // main
 }
 
 //immutable jechoState = false;
 
-//version=CompileFiles;
+version(unittest) {
+//	void main() {}
+}
+
 /**
 	Title: Main command line control
 	eg. add tasks done, save and load, show tasks done
@@ -179,6 +190,7 @@ private:
 	int _autoInputPos; //#to utilize
 
 	string[] _autoLines; // for like 'fc'
+	string _helpTxt;
 
 	//int recNum, string command, int[] parameterNumbers, string parameterString, bool isNumber, ref bool done) {
 	//int _recNum;
@@ -204,96 +216,54 @@ private:
 	//int[] parameterNumbers;
 	//string _parameterString;
 
-	/+
-	 + In "1 2 3" out [1, 2, 3]
+	/++
+	 + In `1 2 3 c"test"` - return [1, 2, 3]
+	 	and change string to ` c"test`
 	 +/
-	//Note has to have a number at the start
+	//Note has to have a number or space at the start
 	int[] arrayCatNumbers(/* cut the numbers off the start */ ref string line) {
-		//writeln("arrayCatNumbers start");
-		//#new. make an array of cat numbers
-		alias isDigit = std.ascii.isDigit;
+		import std.algorithm : countUntil;
+		import std.conv : to;
+		import std.string : split;
 
-		char[] addList; //#list of id numbers - I'm not sure to use this
+		int[] nums;
+		//#shouldn't need try..catch
+		try {
+			// collect just numbers and spaces from the start and stop if any thing else
+			size_t p = line.countUntil!(cs => cs.isAlpha);
 
-		if (line.length > 0 && isDigit(line[0])) { //#note, looks for a number only at the start position, pos 0
-			//writeln("arrayCatNumbers in if");
-			// add list for each number with task
-			char c = line[0];
-			int p = 0; // p - position
-
-			//bool is number or space and not reached the last char
-			bool isValid() {
-				if (c == ' ')
-					return true;
-				return p < line.length && isDigit(c); // return true if either p is not at the end, and c is a digit
-			}
-
-			while(isValid()) { // will be valid at the start (a number)
-				//mixin(trace("/+ while(isValid()) start +/ c"));
-				c = line[p]; // grab a charactor from the line of charactors
-				if (! isValid()) {
-					addList = addList.strip();
-					/+
-					while(! c.isDigit()) {
-						p--;
-						c = line[p];
-					}
-					+/
-
-					break;
-				}
-				addList ~= c; // keep adding charactors
-				//mixin(trace("/+ while(isValid()) end +/ c"));
-				p++; // move to the next position
-			}
-			p--;
-
-			line = line[p .. $].strip(); // remove the used part of line (eg remove the number(s) at the start of line)
-
-			//try {
-				//writeln("_adds");
-				//mixin(traceLine("addList"));
-				//foreach(n; addList)
-				//	mixin(trace("_adds ~= n"));
-				//_adds = to!(int[])(addList.split(" "));
-				//mixin(trace("addList"));
-//				_adds.length = 0;
-//				foreach(n; addList.split)
-//					ns ~= n.to!int;
-				//result = addList.idup.split.to!(int[]);
-			//} catch(Exception e) {
-			//	writeln(`Invalid (_adds = to!(int[])(addList.split(" "));) - failed`);
-			//	return [0];
-			//}
-
-			_recNums.length = 0;
-			//do item number
-			//foreach(recNum; 0 .. _adds.length)
-			//	_recNums ~= cast(int)(_taskMan.doneTasks + _recNum); // doneTasks - build up tasks
+			if (p >= line.length)
+				p = line.length;
+			immutable strNums = prepareNumsFromStr(line[0 .. p]);
+			line = line[p .. $];
+			nums = strNums.split.to!(int[]);
+		} catch(Exception e) {
+			writeln("Whoops..");
 		}
 
-		return addList.split.to!(int[]);
+		return nums;
 	} // arrayCatNumbers
+
+	unittest {
+		Control t;
+		string s;
+		s = "1 2 3"; assert(t.arrayCatNumbers(s) == [1,2,3]);
+		s = "1 b c"; assert(t.arrayCatNumbers(s) == [1]); writeln(s); assert(s == "b c");
+		s = "a b c"; assert(t.arrayCatNumbers(s) == []); assert(s == "a b c");
+		s = "a 2 3"; assert(t.arrayCatNumbers(s) == []); assert(s == "a 2 3");
+	}
 public:
 	@property ref TaskMan taskMan() { return _taskMan; }
 
 	void setup(TaskMan taskMan) {
+		import std.file: readText;
+
 		_dateTime = cast(DateTime)Clock.currTime();
+
+		_helpTxt = readText("helpTxt.txt");
 
 		_taskMan = taskMan;
 		_taskMan.loadDoneTasks("tasklog.bin");
-	}
-
-
-	unittest {
-		import std.range;
-		writeln("-".replicate(10));
-
-		auto strNums = "1 2 3";
-		int total;
-		foreach(num; strNums.split.to!(int[]))
-			total += num;
-		mixin(trace("total"));
 	}
 
 	/**
@@ -401,44 +371,47 @@ public:
 			if (ed == line.length)
 				break; // break out of while loop
 			ced = line[ed];
-			with(Switch)
-				final switch(sw) {
-					case alphaNum:
-						doAlphaNum();
-					break;
-					case space:
-						doSpace();
-					break;
-					case quote:
-						doQuote();
-					break;
-				}
+			final switch(sw) with(Switch) {
+				case alphaNum:
+					doAlphaNum();
+				break;
+				case space:
+					doSpace();
+				break;
+				case quote:
+					doQuote();
+				break;
+			}
 		}
 
 		return (_segments = result);
 	} // function separate files ?
 
+	unittest {
+		Control c;
+		writeln('[', c.separateCommands("rng1"), ']');
+		writeln('[', c.separateCommands("rng-1"), ']');
+		//assert(c.separateCommands("rng-1") == ["rng-1"]);
+	}
+
 	auto processInput(string input, int[] selection = []) {
-	//#Maybe add task entries here for list or 1 id
-		//writeln("TimeLog - Main menu (h for help) * * *"); // main prompt display
-		//input = id.to!string~" "~strip(readln); // get input prepare it and store it in the input variable string
-		//#here for input
-		//write("D>"); input = readln().strip(); // get input prepare it and store it in the input variable string
-		//input = ter.getline("D>");
-		//writeln;
-		//writeln("input: (", input, ')');
+		//#Maybe add task entries here for list or 1 id
 		std.file.append("errorlog.txt", input ~ "\n");
-		//#commands in a row
-		//_autoInput.length = 0;
+		string result = "\n";
+		import std.string : strip;
+
+		input = input.strip;
 
 		if (selection.length == 0) {
 			_selectNumbers.length = 0;
 			// if the input starts as a digit
 			if (input.length > 0 && input[0].isDigit) { //#only catergory numbers
-				//mixin(trace("/* before */ _adds")); // []
-				_adds = arrayCatNumbers(input);
-				//mixin(trace("/* after arrayCatNumbers(input); */ _adds")); // [1]
+				_adds = arrayCatNumbers(/* ref */ input);
 				foreach(add; _adds) {
+					if (add < 0 || add >= _taskMan.getNumberOfPossibleTasks) {
+						result ~= "Warning: (" ~ add.to!string ~ ") is out of bounds.";
+						continue;
+					}
 					_taskMan ~= new Task(
 						_dateTime,
 						add,
@@ -452,20 +425,20 @@ public:
 			_selectNumbers = selection;
 		}
 
-		string result = "\n";
-		//mixin(trace("_selectNumbers.length"));
 		foreach(select; _selectNumbers) {
-			//mixin(trace("select"));
 			_taskMan.setTaskIndex(cast(immutable int)select);
-
-			immutable commands = cast(immutable)separateCommands(cast(immutable)input);
+			_taskMan.clearStEdL;
 
 			foreach(seg; separateCommands(input)) { // loop task ---
 				_command = getType(seg);
 				_parameterString = getString(_command, seg);
-				if (_command == "st" || _command == "et" || _command == "sd" || _command == "l") {
+				import std.algorithm: startsWith;
+
+				if (_command.startsWith("sd", "st", "et", "l")) {
+					_parameterString = prepareNumsFromStr(_parameterString);
+					_parameterString = for3Nums(_parameterString);
 					try {
-						_parameterNumbers = _parameterString.split.to!(int[]);
+						_parameterNumbers = _parameterString.split.to!(int[3]);
 					} catch(Exception e) {
 						import std.stdio: writeln;
 						import std.conv: text;
@@ -493,39 +466,11 @@ public:
 		return result;
 	} // processInput
 
+	//#don't understand set up here
 	string setUp(ref string input) {
-		//bool isNumbercs = _adds.length > 0; // is it bool isNumber = false; isNumbercs - isNumber(s)
-		
 		bool notDigit(char c) {
 			return ! std.ascii.isDigit(c);
 		}
-		
-		/+
-				 + This is what this is for:
-				 + 
-				 + Check each id number value is in bounds
-				 + 
-				 + then add a new task for each with the default settings (date, id, 
-				 +/
-
-		/+
-		if (_adds.length > 0) {
-			foreach(taskId; _adds) { //#here
-				if (! (taskId >= 0 && taskId < _taskMan.getNumberOfPossibleTasks)) // check if valid number
-					writeln(taskId," is an invalid catergory id."); // warning to user
-				else {
-					_taskMan ~= new Task( // add new task
-					                     _dateTime,
-					                     taskId,
-					                     _taskMan.getPossibleTask(cast(uint)taskId).taskString // get string using id
-					                     );
-					_taskMan.viewLast;
-					_taskMan.setTaskIndex(cast(int)_taskMan.numberOfTasks - 1);
-				}
-			}
-			_adds.length = 0;
-		}
-		+/
 
 		if (input.length > 1) {
 			string type = getType( input );
@@ -533,7 +478,7 @@ public:
 			//_parameterString = getString2(input );
 			_parameterNumbers = getNums( type, input );
 		}
-		
+
 		bool ifNotInListOfcommands(in string a, in string list2D) immutable pure nothrow {
 			auto list = list2D.split(" ");
 			foreach(item; list)
@@ -557,13 +502,17 @@ public:
 				break;
 		} // Foreach
 
-		//_command = input; //getType(input);
 		_command = getType(input);
 		_parameterString = getString(_command, input);
-		//mixin(traceLine("input _command _type _parameterString".split));
 
 		return doCommand();
 	} // setUp
+
+	unittest {
+		Control c;
+		string t = "rng-1";
+		writeln(c.setUp(t));
+	}
 
 	/// Find the end of the type in input, looking for a number or a quote
 	string getType(string input)
@@ -572,7 +521,7 @@ public:
 			import std.algorithm: canFind;
 
 			//return c.inPattern(std.ascii.digits ~ '"');
-			return (std.ascii.digits ~ '"').canFind(c);
+			return (std.ascii.digits ~ `"`).canFind(c);
 		}
 		
 		foreach(i, c; input)
@@ -619,234 +568,214 @@ public:
 		return input[ start.length + 1 .. input[ $ - 1 ] == '"' ? $ - 1 : $ ];
 	}
 
+	auto prepareNumsFromStr(in string source) {
+		import std.string: replace, strip;
 
-	unittest {
-		Control c;
-		import std.range;
-		writeln("-".replicate(10));
+		string s;
+		foreach(l; source)
+			if (l.isDigit)
+				s ~= l;
+			else
+				s ~= " ";
+		s = s.strip;
+		string last = "";
+		do {
+			last = s;			
+			s = replace(s, "  ", " ");
+		} while(s != last);
 
-		writeln("getString ?");
-		immutable input = `st"1 2 3"`;
-		immutable start = c.getType(input);
-		with(c)
-			writeln('[', getString(start, input), ']');
-	}
-
-	//#crashes with numbers
-	string getString2(in string input) {
-		long start, end;
-		while(start < input.length && input[start] != '"')
-			start++;
-		end = input.length - 1;
-		while(end > 0 && input[end] != '"')
-			end--;
-
-		//return input[start+1 .. end-1];
-		return input[start+1 .. end];
-	}
-
-	void testMisc() {
-		import std.range;
-		writeln('-'.repeat.take(10));
-		
-		Control c;
-		//TaskMan t;
-		writeln("getString2");
-		with(c)
-			writeln('[', getString2(`st"1 2 3"`), ']'); //,
-		//	run(t);
+		return s;
 	}
 
 	unittest {
-		import std.range;
-		writeln('-'.repeat.take(10));
-
 		Control c;
-		//TaskMan t;
-		writeln("getString2");
-		with(c)
-			writeln('[', getString2(`st"1 2 3"`), ']'); //,
-		//	run(t);
+		assert(c.prepareNumsFromStr("1.2.3.4") == "1 2 3 4");
+		assert(c.prepareNumsFromStr("    1   .2.  3   4  ") == "1 2 3 4");
+	}
+
+	auto for3Nums(in string source) {
+		try {
+			source.split.to!(int[3]);
+		} catch(Exception e) {
+			return "0 0 0";
+		}
+		return source;
+	}
+
+	unittest {
+		Control c;
+		assert(c.for3Nums("1 2 3 4") == "0 0 0");
+		assert(c.for3Nums("1 2 3") == "1 2 3");
 	}
 
 	//#E.g. if you miss c for comment ("got up") it just ignores it, it should abort
-	auto processCommandsFromTextFile() {
+	auto processCommandsFromTextFileOrEditBox(in string sourceTxt = "") {
 		string result;
 		/*
 		line = `1 2 3 c"one two three" st"4 5 6"` ->
 
 		seg[0] = `c"one two three"`
 		seg[1] = `st"4 5 6"`
-			*/
-		import std.ascii: isDigit;
+		*/
+		import std.algorithm : startsWith;
+		import std.ascii : isDigit;
+
 		string[] lines;
 		immutable textFile = _parameterString.setExtension(".txt");
 
-		//writeln("---\n" ~ readText(textFile) ~ "\n---");
-
-		if (! textFile.exists) {
-			result = "File did not found '" ~ textFile ~ "'";
+		if (sourceTxt == "" && ! textFile.exists) {
+			result = "Did not fine file '" ~ textFile ~ "'";
 		} else {
-			_autoInput.length = 0;
-			foreach(char[] commandFrmFileLine; File(textFile, "r").byLine()) { // more of a proper test, can keep adding it self to the document
-				if (commandFrmFileLine.length > 0) {
-					auto line = commandFrmFileLine.idup.strip ~ ' ';
-					if (commandFrmFileLine[0].isDigit)
-						lines ~= line;
-					else
-						lines[$-1] ~= line;
-					import std.string: strip;
+			string[] sourceLines;
+			if (sourceTxt != "")
+				sourceLines = sourceTxt.split("\n");
+			else {
+				//#process text file not supported any more
+				//sourceLines = File(textFile, "r").byLine();
+				return "process text file not supported any more! - Use the (Process!) button";
+			}
 
-					if (line.strip.length > 0)
-						result ~= line ~ "\n";
+			_autoInput.length = 0;
+			foreach(commandFrmFileLine; sourceLines) { // more of a proper test, can keep adding it self to the document
+				if (commandFrmFileLine.length > 0) {
+					auto line = commandFrmFileLine.strip;
+					if (line[0].isDigit) {
+						lines ~= line;
+						//result ~= line ~ "\n";
+					} else {
+						if (lines.length > 0) {
+							lines[$ - 1] ~= " " ~ line; //#untested 11 2 2018 - this is need for parsing commandfile.txt
+							//result ~= " " ~ line;
+						} else {
+							result ~= "Must have a category number at the first line of the stuff in the text box!"; //#Why didn't this trigger when I tested it?!
+
+							return result;
+						}
+					}
 				}
-				//foreach(i, seg; separateCommands(commandFrmFileLine.idup)) {
-				//	_autoInput ~= AutoInput(commandFrmFileLine.idup, seg, i == 0 ? true : false);
-				//}
-			} // thumbs up!
-			//writeln([lines]); //#put this in
+			}
 
 			int count;
 			abort0: foreach(line; lines) { // loop each line ---
-				//mixin(trace("count++"));
-
-				//#here
 				_adds = arrayCatNumbers(line); // _add = #(s) and remove
-				//mixin(trace("line"));
-
-				//mixin(trace("_adds"));
 				int countAdd;
 
+				result ~= "line: [" ~ line ~ "]"; 
+
 				foreach(add; _adds) { // loop numbers ---
-					//mixin(trace("countAdd++"));
-
-					/+
-					with(_taskMan.getTask(cast(int)_taskMan.doneTasks)) { // add eg equals 90 for jokes
-						mixin(traceLine("cast(int)_taskMan.doneTasks-1, add, taskString, timeLength, comment, dateTime, displayTimeFlag, endTime, displayEndTimeFlag".split(", ")));
-						_taskMan ~= new Task(add, taskString, timeLength, comment, dateTime, displayTimeFlag, endTime, displayEndTimeFlag); // add new task
+					if (add < 0 || add >= _taskMan.getNumberOfPossibleTasks) {
+						result ~= "Error: (" ~ add.to!string ~ ") is out of bounds.";
+						break abort0;
 					}
-					+/
-
 					_taskMan ~= new Task(
 						_dateTime,
 						add,
-						//_taskMan.getTask(cast(immutable int)_taskMan.numberOfTasks - 1).taskString() //,
-						//""
 						_taskMan.getPossibleTask(cast(uint)add).taskString // get string using id
 					);
 					_taskMan.setTaskIndex(cast(immutable int)_taskMan.numberOfTasks - 1);
 
 					foreach(seg; separateCommands(line)) { // loop task ---
+						result ~= "seg: (" ~ seg ~ ") ";
 						_command = getType(seg);
+						result ~= "_command = #1[" ~ _command ~ "]";
 						_parameterString = getString(_command, seg);
-						//mixin(trace("_parameterString"));
 						import std.algorithm: startsWith;
 						
-						//_parameterNumbers = [0,0,0];
-						//if (_command == "st" || _command == "et" || _command == "sd" || _command == "l")
-						if (_command.startsWith("st", "et", "sd", "l"))
-							_parameterNumbers = _parameterString.split.to!(int[]);
-						else if (! _command.startsWith("c")) {
+						if (_command.startsWith("sd", "st", "et", "l")) {
+							_parameterString = prepareNumsFromStr(_parameterString);
+							if (_parameterString.split.length != 3) {
+								result ~= "\n[" ~ _parameterString ~ "] Wrong number of numbers!";
+								break abort0;
+							}
+							_parameterString = for3Nums(_parameterString);
+							try {
+								_parameterNumbers = _parameterString.split.to!(int[]);
+							} catch(Exception e) {
+								result ~= "\n[" ~ _parameterString ~ "] Error converting to numbers!";
+								break abort0;
+							}
+						} else if (! _command.startsWith("c")) {
 							result ~= line ~ "\n";
 							result ~= "[" ~ _command ~ "] - Error! Aborting.. Check the code..";
 
 							break abort0;
 						}
 
-						//categoryString(add);
-
-						if (_command != "fc" && _command != "fileComands") {
+						if (sourceTxt != "" || _command.startsWith("fc", "fileComands")) { //#need better than startsWith
 							immutable command = doCommand();
+
 							import std.conv: text;
 							import std.string: strip;
 
-							//if (command.strip.length > 0)
-							//	result ~= command ~ "\n"; // uses _command
-							//else
-							result ~= text("Command: [", command, "], Id: ", cast(immutable int)_taskMan.numberOfTasks - 1, ", Add: ", add, ", Seg: [", seg, "], String, (", _parameterString, "), Numbers: ", _parameterNumbers, "\n");
+							result ~= text("Command return value: #2[", command, "], Id: ", cast(immutable int)_taskMan.numberOfTasks - 1, ", Add: ", add, ", Seg: [", seg, "], String, (", _parameterString, "), Numbers: ", _parameterNumbers, "\n");
+
+							if (command.canFind("Error:")) { //#may change it to 'ErroR:' and edit all the connected stuff
+								writeln(command);
+								result ~= "Error returned!";
+								break abort0;
+							}
 						}
-						/+
-						with(_taskMan.getTask(add)) { // add eg equals 90 for jokes
-							mixin(traceLine("cast(int)_taskMan.doneTasks-1, add, taskString, timeLength, comment, dateTime, displayTimeFlag, endTime, displayEndTimeFlag".split(", ")));
-						}
-						+/
-
-						//_recNum = cast(int)_taskMan.doneTasks-1;
-
-						//mixin(traceLine("_command _parameterString".split));
-						//_recNum = cast(int)_taskMan.doneTasks-1;
-						//_autoInput ~= AutoInput(seg);
-						//mixin(trace("seg"));
-
-						//	this( int  id0, string taskString0, TimeLength length0, string comment0, DateTime dateTime0, bool displayTimeFlag0, DateTime endTime0, bool displayEndTimeFlag0 )
 					} // separateCommands(line)
 				} // _adds
 			} // lines
-//					version(none) {
-				_autoInputPos = 0; // set postion to start segment
-//						_inputType = InputType.autoInput;
-//						
-				_autoLines = lines;
-//					}
+			_autoInputPos = 0; // set postion to start segment
+			_autoLines = lines;
 		}
 
-		/*
-		import std.range;
-		writeln('-'.repeat.take(10));
-		foreach(line; lines)
-			writeln(line);
-		*/
 		_done = true;
 
 		return result;
-	} // processCommandsFromTextFile
+	} // processCommandsFromTextFileOrEditBox
 
-	/// do command eg. st"20 53 0"
+	unittest {
+		Control c;
+		//jecho(c.processCommandsFromTextFileOrEditBox(`13 st"1 2 3" c"Test"`));
+	}
+
+	/// do command eg. st"20 53 0", h, or rng"-5 -1" etc.
 	string doCommand() {
 		string result = _command;
 
-		//writeln("Command Count: ", _commandCount++);
-		//_taskMan.setTaskIndex(_recNum);
 		switch(_command) {
 			case "h", "help":
-				result ~= "\nq/quit/exit - To quit" ~ "\n" ~
-						"h/help - For this help" ~ "\n" ~
-						"v - List tasks to choose" ~ "\n" ~
-						"p - Print tasks done" ~ "\n" ~
-						"t - Current date and time" ~ "\n" ~
-						"# - add task to done tasks list" ~ "\n" ~
-						"clearalltasks - Clear all done tasks" ~ "\n" ~
-						`c"<text>" - add comment to selected task` ~ "\n" ~
-						"s# - Select task to edit" ~ "\n" ~
-						`sv/sv"<file name>" - Save` ~ "\n" ~
-						`ld/ld"<file name>" - Load` ~ "\n" ~
-						`sd"# # #" - set date. day month and year` ~ "\n" ~
-						`st"# # #" - set start time: hour, minute, second respectively` ~ "\n" ~
-						`et"# # #" - set end time: hour, minute, second respectively` ~ "\n" ~
-						`l"# # #" - set time length (hours, minutes, and seconds)` ~ "\n" ~
-						"lt# - List by type" ~ "\n" ~
-				        `printDay/pd"# # # (# # #)" - view a day or range` ~ "\n" ~
-						`d"<file name>" - Dump to text file` ~ "\n" ~
-						"*r# - remove task with by number" ~ "\n" ~
-						"sort - sort list by time" ~ "\n" ~
-						`*addCategory/ac"<name>"` ~ "\n" ~
-						"*hideCategory/hc#" ~ "\n" ~
-						"*revealCategory/rc#" ~ "\n" ~
-						"showHiddenCategorys/shc - show all hidden categorys." ~ "\n" ~
-						`fileComands/fc"<file name>" - from file commands (don't add ext), Note: save first` ~ "\n" ~
-						"TaskDate/td - Show current date" ~ "\n" ~
-						`calculate/ct"# # # -/+ # # #" - calculate time between two times` ~ "\n" ~
-						`*listCatogories/lc - list each for handy format`~"\n" ~
-						`*convertToCommands/ctc <name> - Convert a copy of the data back to commands version.` ~ "\n"~
-						`customFormatList/cfl - Set the format for displaying the tasks.`~"\n"~
-						`showFormatTags/sft - show format tags for custom format list` ~ "\n" ~
-						"cls - clear the screen and text tank" ~ "\n" ~
-						"vtt - view text tank" ~ "\n" ~
-						`stt"<file name>" - save tank text` ~ "\n" ~
-				        `sp"<phrase>" - search text`;
+				result ~= _helpTxt;
+			break;
+			case "rng", "range":
+				if (_parameterNumbers.length == 1 || _parameterNumbers.length == 2) {
+					try {
+						int rng1, rng2;
+
+						rng1 = _parameterNumbers[0];
+						if (_parameterNumbers.length == 2)
+							rng2 = _parameterNumbers[1];
+						else
+							rng2 = rng1;
+
+						void setConvertIfNeg(ref int num) {
+							if (num < 0)
+								num = cast(int)_taskMan.numberOfTasks - num * -1;
+						}
+						setConvertIfNeg(rng1);
+						setConvertIfNeg(rng2);
+
+						import std.algorithm : swap;
+
+						if (rng1 > rng2)
+							swap(rng1, rng2);
+						if ([rng1, rng2].all!(n => n >= 0 && n < _taskMan.numberOfTasks))
+							result = _taskMan.getRange(rng1, rng2);
+						else
+							result = "\nSomething amiss..";
+					} catch(Exception e) {
+						//#I got a crash, I don't know how?!
+						result = "\nWhoops..";
+					}
+				} else {
+					result = "\nSomething amiss..";
+				}
 			break;
 			case "fileComands", "fc":
-				result ~= "\n" ~ processCommandsFromTextFile();
+				result ~= "\n" ~ processCommandsFromTextFileOrEditBox();
 			break;
 			case "printDay", "pd":
 				if (_parameterNumbers.length == 3) {
@@ -858,63 +787,40 @@ public:
 					result ~= "Error with printing a day or range of days";
 				}
 				break;
-			//case "stswitch", "stw": 
-
-			//	break;
 			case "st":
 				if (_parameterNumbers.length == 3) {
-					scope( success ) {
-						//writeln( timeString( DateTime( _dateTime.year, _dateTime.month, _dateTime.day,
-						 //                            _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2] ), /+ second: +/ true ) );
-						
-						//_time = DateTime(_dateTime.year, _dateTime.month, _dateTime.day
-						//                , _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
-					}
 					try {
 						result ~= _taskMan.setTime(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
-						//result = 
 					} catch( Exception e ) {
-						//writecln( Color.red, "Invalid time, try once more." );
-						result ~= "Invalid start time, try once more.";
+						result ~= "Error: Invalid start time, try once more.";
 					}
 				}
 				break;
 			case "et":
 				if (_parameterNumbers.length == 3) {
-					scope( success ) {
-						//writeln( timeString( DateTime( _dateTime.year, _dateTime.month, _dateTime.day,
-						 //                             _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2] ), /+ second: +/ true ) );
-						
-						//_endTime = DateTime(1,1,1 //_dateTime.year, _dateTime.month, _dateTime.day
-						//                    , _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
-					}
 					try {
 						result ~= _taskMan.setEndTime(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
 					} catch( Exception e ) {
-						//writecln( Color.red, "Invalid time, try once more." );
-						result ~= "Invalid end time, try once more.";
+						result ~= "Error: Invalid end time, try once more.";
 					}
 				}
 				break;
 				case "l":
 					if ( _parameterNumbers.length == 3 ) {
 						result ~= _taskMan.setTimeLength(TimeLength(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]));
-					//writeln("length of time: ", [_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]]);
 					}
 					else {
-						//writecln( Color.red, "Wrong number of operants(sp), try once more." );
-						result ~= "Wrong number of operants(sp) for length of time, try once more.";
+						result ~= "Error: Wrong number of operants(sp) for length of time, try once more.";
 					}
 				break;
 				//#can terminate, must fix!
 				// Set date eg. 'sd"23 10 2010"'
 			case "sd":
 				if ( _parameterNumbers.length == 3 ) {
-//					if (! (_parameterNumbers[0] > 0 && _parameterNumbers[0] <= 31
 					if (! (_parameterNumbers[0] > 0 &&
 						_parameterNumbers[0] <= (DateTime(Date(_parameterNumbers[2], _parameterNumbers[1], 1), TimeOfDay(0, 0, 0)).daysInMonth)
 					&& _parameterNumbers[1] >= 1 && _parameterNumbers[1] <= 12)) {
-						result ~= "Error! Date not set with date time";
+						result ~= "Error: Date not set with date time";
 						break;
 					}
 					
@@ -924,26 +830,31 @@ public:
 						         _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]); // date, month, year;
 						writefln(tex);
 						result ~= tex;
-						_dateTime = DateTime(_parameterNumbers[2], _parameterNumbers[1], _parameterNumbers[0]
-						, _dateTime.hour, _dateTime.minute, _dateTime.second);
+						_dateTime = DateTime(_parameterNumbers[2], _parameterNumbers[1], _parameterNumbers[0],
+						_dateTime.hour, _dateTime.minute, _dateTime.second);
 					}
 					try {
 						_taskMan.setDate(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
 					} catch(Error e) {
-						//writecln( Color.red, "Invalid date, try once more." );
-						result ~= "Invalid date, try once more.";
+						result ~= "Error: Invalid date, try once more.";
 					}
 				}
 				else {
-					//writecln( Color.red, "Wrong number of arguments (just day, month, and year.)" );
-					result ~= "Wrong number of arguments (just day, month, and year.) - date";
+					result ~= "Error: Wrong number of arguments (just day, month, and year.) - date";
 				}
 				break;
 			case "c":
 				mixin(trace("_parameterString"));
-				_taskMan.setComment( _parameterString );
+				result ~= _taskMan.setComment(_parameterString);
 				break;
 				//#new
+			case "ws":
+				if ( _parameterString != "" ) {
+					result ~= _taskMan.listFoundText(_parameterString, true);
+				} else {
+					result ~= "This is not possible.";
+				}
+			break;
 			case "sp":
 				if ( _parameterString != "" ) {
 					result ~= _taskMan.listFoundText(_parameterString);
@@ -982,9 +893,7 @@ public:
 				"*%sn - select number";
 			break;
 			case "customFormatList","cfl":
-				if ( _parameterString != "" ) {
-					_taskMan.customFormatList(_parameterString);
-				}
+				_taskMan.customFormatList(_parameterString);
 			break;
 			case "convertToCommands","ctc":
 				string fileName = "toCommands";
@@ -994,35 +903,37 @@ public:
 				_taskMan.convertToCommands(fileName.setExtension(".txt"));
 			break;
 			case "listCatogories", "lc":
-				result ~= _taskMan.view(TaskType.possibles, 1);
+				result ~= "\n" ~ _taskMan.view(TaskType.possibles, 1);
 			break;
 			case "calculate", "ct":
-				scope(failure)
+				try {
+					auto params = _parameterString.split();
+					if (params.length != 7) {
+						writeln(params.length, " is a wrong number of parameters in this case.");
+						result ~= "Some thing wrong with your input";
+						break;
+					}
+					if (params[3] == "-") {
+						auto tod = TimeOfDay(params[0].to!int(), params[1].to!int(), params[2].to!int())
+							- TimeOfDay(params[4].to!int(), params[5].to!int(), params[6].to!int());
+						writeln("- ", tod.toString());
+						result ~= text("- ", tod);
+					} else if (params[3] == "+") {
+						
+						enum {hour,minute,second, hour2 = 4, minute2, second2}
+
+						int p(int num)() { return params[num].to!int(); } //#tricky
+
+						auto tod = TimeOfDay(p!hour, p!minute, p!second);
+						tod += dur!"hours"(p!hour2) + dur!"minutes"(p!minute2) + dur!"seconds"(p!second2);
+
+						immutable newTime = text("+ ", tod);
+						writeln(newTime);
+						result ~= newTime;
+					}
+				} catch(Exception e) {
 					writeln("Some failure.");
-				auto params = _parameterString.split();
-				if (params.length != 7) {
-					writeln(params.length, " is a wrong number of parameters in this case.");
-					break;
-				}
-				if (params[3] == "-") {
-					auto tod = TimeOfDay(params[0].to!int(), params[1].to!int(), params[2].to!int())
-						- TimeOfDay(params[4].to!int(), params[5].to!int(), params[6].to!int());
-					writeln("- ", tod.toString());
-					result ~= text("- ", tod.toString());
-				} else if (params[3] == "+") {
-					
-					enum {hour,minute,second, hours=4,minutes,seconds}
-
-					int p(int num)() { return params[num].to!int(); } //#tricky
-
-					auto t = TimeOfDay(p!hour, p!minute, p!second);
-
-					t += dur!"hours"(p!hours) + dur!"minutes"(p!minutes) + dur!"seconds"(p!seconds);
-
-					writefln("+ %s:%02s:%02s",
-							 t.hour, t.minute, t.second);
-					result ~= text("\n+ %s:%02s:%02s",
-							 t.hour, t.minute, t.second);
+					result ~= "Invalid input, or some thing.";
 				}
 			break;
 			case "skip":
@@ -1032,11 +943,11 @@ public:
 				with(_dateTime)
 				{
 					writefln(
-						"%s.%02s.%s ", // date, month, year
-						day, cast(int)month, year);
-					result ~= text("\n",
-						"%s.%02s.%s ", // date, month, year
-						day, cast(int)month, year);
+						"%s.%02s.%s [%s:%0s:%0s]", // date, month, year, hour, minute, second
+						day, cast(int)month, year, hour, minute, second);
+					result ~= format("\n",
+						"%s.%02s.%s [%s:%0s:%0s]", // date, month, year, hour, minute, second
+						day, cast(int)month, year, hour, minute, second);
 				}
 			break;
 			case "sort":
@@ -1056,28 +967,32 @@ public:
 					result ~= "\nNeeds a file name";
 				}
 			break;
-			case "t":
+			case "t", "time":
 			//#looks similer to base.timeString(DateTime time, bool includeSecond = false) function
 				// timeString(cast(DateTime)Clock.currTime, true); //#but doesn't have the day of the week, and different layout
-				DateTime dateTime = cast(DateTime)Clock.currTime();
+				auto dateTime = cast(DateTime)Clock.currTime();
 				with(dateTime)
 				{
 					writefln(
 						"%s " ~ // day of the week (eg. 'Saturday')
 						"%s.%02s.%s " ~ // date, month, year
-						"[%s:%02s:%02s%s]", // hour:minute:second am/pm
+						"[%s:%02s:%02s%s] " ~ // hour:minute:second am/pm
+						"(%s %s %s)",
 						//split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday Someday")[dayOfWeek],
 						split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday")[dayOfWeek],
 						day, cast(int)month, year,
-						hour == 0 || hour == 12 ? 12 : hour % 12, minute, second, hour <= 11 ? "am" : "pm");
+						hour == 0 || hour == 12 ? 12 : hour % 12, minute, second, hour <= 11 ? "am" : "pm",
+						hour, minute, second);
 
 					result ~= format("\n%s " ~ // day of the week (eg. 'Saturday')
 						"%s.%02s.%s " ~ // date, month, year
-						"[%s:%02s:%02s%s]", // hour:minute:second am/pm
+						"[%s:%02s:%02s%s] " ~ // hour:minute:second am/pm
+						"(%s %s %s)",
 						//split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday Someday")[dayOfWeek],
 						split("Sunday Monday Tuesday Wednesday Thursday Friday Saturday")[dayOfWeek],
 						day, cast(int)month, year,
-						hour == 0 || hour == 12 ? 12 : hour % 12, minute, second, hour <= 11 ? "am" : "pm");
+						hour == 0 || hour == 12 ? 12 : hour % 12, minute, second, hour <= 11 ? "am" : "pm",
+						hour, minute, second);
 				}
 			break;
 			// list the entries of selected type
@@ -1091,22 +1006,7 @@ public:
 			//#need to be able to do like this - eg. `r"0 1 2"` to wipe three off
 			case "r":
 				if ( _parameterNumbers.length == 1 ) {
-					/+
-					import std.ascii: toLower;
-					writeln("Are you sure (y/n)?");
-					auto option = readln().chomp;
-					if (option.length) {
-						switch(option[0].toLower()) {
-							case 'y':
-					+/
-								_taskMan.removeAt( _parameterNumbers[0] );
-					/+
-								break;
-							default:
-								break;
-						}
-					}
-					+/
+					_taskMan.removeAt( _parameterNumbers[0] );
 				}
 				break;
 			// This works, but only one 
@@ -1142,7 +1042,7 @@ public:
 					writeln("Error, eg 's1600'");
 				}
 			break;
-			case "v":
+			case "v","viewCategories":
 				result ~= "\n" ~ _taskMan.view(TaskType.possibles);
 				break;
 			case "p":
@@ -1155,17 +1055,39 @@ public:
 				_done = true;
 				return ""; //#comes up with a warning about break being not reachable
 			//break;
-			case "sv":
-				if ( _parameterString != "" ) // eg. sv"back"
-				{
-					_taskMan.saveDoneTasks( _parameterString ~ ".bin" );
-					result ~= "\n" ~ _parameterString ~ ".bin";
-				}
-				else
-				{
-					//writeln( "You may not save at this point in time!" );
-					_taskMan.saveDoneTasks( "tasklog.bin" );
-					result~= "\ntasklog.bin";
+			case "sv", "save":
+				try {
+					import std.file: copy;
+
+					auto ifSave(in string fileNameRoot) {
+						import std.file: exists;
+
+						immutable checkFile = fileNameRoot ~ ".bin";
+						if (checkFile.exists) {
+							copy(checkFile, fileNameRoot ~ "BackUp.bin");
+
+							return true;
+						}
+
+						return false;
+					}
+					bool oldExisted = false;
+					if ( _parameterString != "" ) // eg. sv"back"
+					{
+						oldExisted = ifSave(_parameterString);
+						_taskMan.saveDoneTasks(_parameterString ~ ".bin");
+						result ~= "\nSaved as: " ~ _parameterString ~ ".bin" ~
+							(oldExisted ? " - also copied the old one as " ~ _parameterString ~ "BackUp.bin" : "");
+					}
+					else
+					{
+						//writeln( "You may not save at this point in time!" );
+						copy("tasklog.bin", "tasklogBackUp.bin");
+						_taskMan.saveDoneTasks( "tasklog.bin" );
+						result~= "\nSaved: tasklog.bin - also copied the old one as tasklogBackUp.bin";
+					}
+				} catch(Exception e) {
+					result~= "\nSome thing wrong.";
 				}
 			break;
 			case "clearalltasks":
@@ -1175,13 +1097,16 @@ public:
 				// Is it not the default
 				if ( _parameterString != "" ) // eg. ld"back"
 				{
+					_taskMan.saveDoneTasks( _parameterString ~ "Old.bin" );
 					_taskMan.loadDoneTasks( _parameterString ~ ".bin" );
-					result ~= "\n" ~ _parameterString ~ ".bin" ~ " loaded.";
+					result ~= "\n" ~ _parameterString ~ ".bin" ~
+						" loaded. (" ~ _parameterString ~ "Old.bin" ~ ", saved first)";
 				}
 				else // it is the default
 				{
+					_taskMan.saveDoneTasks( "old.bin" );
 					_taskMan.loadDoneTasks("tasklog.bin");
-					result~= "\ntasklog.bin loaded.";
+					result~= "\ntasklog.bin loaded, (old.bin, saved first)";
 				}
 			break;
 			//#new
@@ -1219,53 +1144,16 @@ public:
 			break;
 			default:
 				//debug
-				if (! _isNumber && _command != "")
+				if (! _isNumber && _command != "") {
 					writeln('[', _command, ']', " command is unreconized.");
+					result ~= text("\n", '-', _command, '-', " command is unreconized.");
+				}
 			break;
 		} // switch
 		_command = ""; //#a hack - calls doCommand twice! but I can't see 2 calls
 
 		return result;
 	} // do command
-
-	/*
-					Title: Check if setting(s) are valid - unused as of yet
-					
-				*/
-	// probably remove this validSettings inner function, not using it
-	// [key label] [number or array]
-	// length      "0 5 0" - get length in time
-	// s           409 - select activity
-	/*
-				Method:
-				start with input
-				check to if it's got data (egs. 'l"0 5 0"' or 's409' or not 'v')
-				*/
-	bool validSettings(in string input, in string type, in int args)
-	{
-		if (input == "" || input.length <= type.length || input[ 0 .. type.length ] != type ) // 's' or 'l""'
-			return false;
-		bool quote = ( input[ type.length ] == '"' );
-		if ( args == 1 && ! quote ) // if one argument (eg. 's215')
-		{
-			return isDigits( input[ type.length .. $ ] ); // check if all numbers
-		}
-		else // if not one argument (eg. 'l"0 5 0"')
-		{
-			// has the least workable
-			if ( input.length <= type.length + 3 && input[ type.length ] == '"' && input[ $ - 1 ] == '"' )
-			{
-				auto operands = split( input[type.length + 1 .. $ - 1] );
-				if ( operands.length != args )
-					return false; // wrong number of arguments
-				foreach ( number; operands )
-					if ( ! isDigits( number ) )
-						return false; // contains a non number
-				return true; // valid operands
-			}
-		}
-		return false;
-	} // test for if valid input
 
 	unittest {
 		import std.range;
@@ -1281,9 +1169,10 @@ public:
 			//mixin(jecho(q{string input = `1 st"10 30 0" c"one"`})); //#not work eg Error: found '10' when expecting ',' etc
 			auto segments = separateCommands(input);
 
-			immutable type = getType(segments[1]);
+			immutable type1 = getType(segments[1]);
+			immutable type2 = getType(segments[2]);
 			import std.string: split;
-			mixin(traceLine("type segments".split));
+			mixin(trace("type1 type2 segments".split));
 		    //doCommand(recNum, type, _parameterNumbers, parameterString, isNumbercs, done);
 		}
 
