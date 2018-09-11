@@ -1,3 +1,5 @@
+//#sort
+//#raw write?
 //#how did the goto get here?
 //#new
 //#Possible tasks
@@ -88,36 +90,45 @@ public:
 		int numberOfItem = 1;
 		bool found = false;
 		bool last = false;
-		int id, im, iy;
+		int iday, im, iy;
 
-		id=fd;
+		iday=fd;
 		im=fm;
 		iy=fy;
+
+		Task[] taskTank;
+
 		if (tod != 0)
 			while(true) { // while
-				foreach(i, task; _doneTasks)
-						with(task.dateTime)
-							if (day == id && month == im && year == iy) {
-								immutable info = task.viewInfo(
-									numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
-								_textTank ~= info;
-								result ~= info;
-								numberOfItem++;
-								found = true;
-							}
+				foreach(i, task; _doneTasks) {
+					with(task.dateTime)
+						if (day == iday && month == im && year == iy) {
+							with(task)
+								taskTank ~= new Task(cast(int)i, taskString,
+								  timeLength, comment,
+								  dateTime, displayTimeFlag,
+								  endTime, displayEndTimeFlag);
+							immutable info = task.viewInfo(
+								numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
+							_textTank ~= info;
+							result ~= info;
+							numberOfItem++;
+							found = true;
+						}
+				}
 
-				id++;
-				if (id > 31) {
-					id = 0;
+				iday++;
+				if (iday > 31) {
+					iday = 1;
 					im++;
 					if (im>12) {
-						im = 0;
+						im = 1;
 						iy++;
 					}
 				}
 				if (last)
 					break;
-				if (id == tod && im == tom && iy == toy)
+				if (iday == tod && im == tom && iy == toy)
 					last = true; //#how did the goto get here?
 			} // while
 
@@ -125,6 +136,12 @@ public:
 			foreach(i, task; _doneTasks) {
 				with(task.dateTime)
 					if (day == fd && month == fm && year == fy) {
+						with(task)
+							taskTank ~= new Task(cast(int)i, taskString,
+								timeLength, comment,
+								dateTime, displayTimeFlag,
+								endTime, displayEndTimeFlag);
+
 						immutable info = task.viewInfo(
 							numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
 						_textTank ~= info;
@@ -136,7 +153,23 @@ public:
 
 		if (! found)
 			result = "No results!";
-		
+/+
+//#can't work it out
+//Bible [12:34.56] - read and laydown
+//Snooze [12:34.56] - read and laydown
+//->
+//Bible. Snooze [12:34.56] - read and laydown
+
+		foreach(i, task; taskTank) {
+			foreach(i2, task2; taskTank) {
+				if (i != i2 && task.comment == task2.comment) {
+					result ~= task2.taskString ~ " ";
+				} else {
+					result ~= 
+				}
+			}
+		}
++/		
 		return result;
 	} // printDay
 
@@ -290,7 +323,9 @@ public:
 	
 	/// Sort list by date and time
 	void doSort() {
-		sort!("a.getDateTime() < b.getDateTime()")(_doneTasks);
+		//#sort
+		sort!("a.getDateTimeForSort() < b.getDateTimeForSort()")(_doneTasks);
+		//sort!("a.getDateTime() < b.getDateTime()")(_doneTasks);
 	}
 	
 	//#new
@@ -318,7 +353,7 @@ public:
 					content ~= endTimeToCommand() ~ "\n";
 			}
 		}
-		File(fileName, "w").write(content);
+		File(fileName, "w").write(content); //#raw write?
 		//auto f = File(fileName, "w"); // open for writing
 		//f.write(content);
 		//f.close;

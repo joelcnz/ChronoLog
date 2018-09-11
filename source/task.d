@@ -1,4 +1,3 @@
-//#same as the 'DateTime dateTime()' function
 //#enter 'v'
 //#the line of dashes is stink
 //#not sure on this for usin with sorting
@@ -45,9 +44,31 @@ private:
 	bool _displayTimeFlag;
 	bool _displayEndTimeFlag;
 public:
-	DateTime getDateTime() { //#same as the 'DateTime dateTime()' function
-		return _dateTime;
+	DateTime getDateTimeForSort() {
+		DateTime dt = _dateTime;
+
+		if (_displayTimeFlag == false) {
+			if (_displayEndTimeFlag == true) {
+				dt = DateTime(Date(_dateTime.year, _dateTime.month, _dateTime.day),
+							  TimeOfDay(_endTime.hour, _endTime.minute, _endTime.second));
+			}
+		}
+
+		return dt;
+
+//		return _dateTime;
 	}
+	
+	/+
+	auto tid() { return _id; }
+	auto taskString() { return _taskString; }
+	auto comment() { return _comment; }
+	auto dateTime() { return _dateTime; }
+	auto endTime() { return _endTime; }
+	auto tLength() { return _length; }
+	auto displayTimeFlag() { return _displayTimeFlag; }
+	auto displayEndTimeFlag() { return _displayEndTimeFlag; }
+	+/
 	
 	/// task constructor sets task with current date and time
 	this(DateTime dateTime = DateTime(1979,1,1), int id = 0, string taskString = "")
@@ -208,8 +229,9 @@ public:
 	{
 		if (cformat != "") {
 			string result = cformat;
-			foreach(tag; "%sn %in %nl %cn %cl %dd %wd %co %st %et".split()) {
-				string piece;
+			foreach(tag; "%sn %in %nl %cn %cl %dd %wd %co %st %et %tl".split()) {
+				string piece = "";
+
 				switch(tag) {
 					case "%sn":
 						piece = indexNumber.to!string();
@@ -241,15 +263,18 @@ public:
 					break;
 					case "%et":
 						if (displayEndTimeFlag())
-							piece = timeString(_endTime);
+							piece = " -> " ~ timeString(_endTime);
+					break;
+					case "%tl":
+						if (! (_length.hours == 0 && _length.minutes == 0 &&  _length.seconds == 0))
+							piece = _length.toString;
 					break;
 					default:
 					break;
 				}
 
-				//if (piece) {
+				if (piece)
 					result = replace(result, tag, piece);
-				//}
 			}
 			
 			return result;
@@ -263,9 +288,10 @@ public:
 			{
 				string hourMinSecStr;
 				if ( _displayTimeFlag == true )
-					hourMinSecStr = format( "[%s:%02s%s]",
+					hourMinSecStr = format( "[%s:%02s.%02d%s]",
 											(hour == 0 || hour == 12 ? 12 : hour % 12), 
 											 minute,
+											 second,
 											(hour < 12 ? "am" : "pm") );
 				else
 					hourMinSecStr = "";
@@ -274,9 +300,10 @@ public:
 				if (_displayEndTimeFlag)
 					with(_endTime) {
 						endHourMinSecStr = "-> " ~
-												format( "[%s:%02s%s]",
+												format( "[%s:%02s.%02d%s]",
 												(hour == 0 || hour == 12 ? 12 : hour % 12), 
 												 minute,
+												 second,
 												(hour < 12 ? "am" : "pm") );
 					}
 

@@ -209,11 +209,12 @@ public:
 			import std.string: split, wrap;
 
 			dstring s;
-			foreach(line; _editBoxMain.text.split("\n"))
+			auto paragraphs = _editBoxMain.text.split("\n");
+			foreach(line; paragraphs)
 				s ~= wrap(line, 116, null, null, 4);
 			_editBoxMain.text = s;
 
-			addToHistory("Text wrapped.");
+			addToHistory("Text wrapped. (was ", paragraphs.length, " lines)");
 
 			return true;
 		};
@@ -259,7 +260,7 @@ version(none) {
 	} // version not work, comes up with a blank window
 
 		_window.mainWidget.childById!Button("buttonGet").click = delegate(Widget w) {
-			addToHistory("Get pressed");
+			addToHistory("Get pressed for ", _editLineId.text);
             int id;
 			try {
 				id = _editLineId.text.to!int;
@@ -271,7 +272,7 @@ version(none) {
 
 			auto task = _taskMan.getTask(id); 
 			if (task is null) {
-				immutable error = "Task out of range!"d;
+				immutable error = "Task # out of range! (0-"d ~ (_taskMan.numberOfTasks - 1).to!dstring ~ ")"d;
 
 				_editBoxMain.text = _editBoxMain.text ~ "\n" ~ error;
 				addToHistory(error);

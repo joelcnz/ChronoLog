@@ -1,3 +1,4 @@
+//#new (l"1,2,3" wasn't working - had to be space seperated) 6 9 2018
 //#may change it to 'ErroR:' and edit all the connected stuff
 //#Why didn't this trigger when I tested it?!
 //#untested 11 2 2018 - this is need for parsing commandfile.txt
@@ -47,7 +48,6 @@
 //#need st and et [# ]
 //#untested 19 Aug 2013
 //#commands in a row
-//#can terminate, must fix!
 //#had to add string to (a)
 //#new
 //#was bug here, still a bug on Lukes version
@@ -590,8 +590,10 @@ public:
 		assert(c.prepareNumsFromStr("    1   .2.  3   4  ") == "1 2 3 4");
 	}
 
-	auto for3Nums(in string source) {
+	auto for3Nums(string source) {
 		try {
+			//#new (l"1,2,3" wasn't working - had to be space seperated) 6 9 2018
+			source = prepareNumsFromStr(source);
 			source.split.to!(int[3]);
 		} catch(Exception e) {
 			return "0 0 0";
@@ -621,12 +623,14 @@ public:
 		immutable textFile = _parameterString.setExtension(".txt");
 
 		if (sourceTxt == "" && ! textFile.exists) {
-			result = "Did not fine file '" ~ textFile ~ "'";
+			result = "Did not find file '" ~ textFile ~ "'";
 		} else {
 			string[] sourceLines;
-			if (sourceTxt != "")
-				sourceLines = sourceTxt.split("\n");
-			else {
+			if (sourceTxt != "") {
+				import std.string : replace;
+
+				sourceLines = sourceTxt.replace("”", `"`).split("\n");
+			} else {
 				//#process text file not supported any more
 				//sourceLines = File(textFile, "r").byLine();
 				return "process text file not supported any more! - Use the (Process!) button";
@@ -810,14 +814,21 @@ public:
 						result ~= "Error: Wrong number of operants(sp) for length of time, try once more.";
 					}
 				break;
-				//#can terminate, must fix!
 				// Set date eg. 'sd"23 10 2010"'
 			case "sd":
 				if ( _parameterNumbers.length == 3 ) {
-					if (! (_parameterNumbers[0] > 0 &&
-						_parameterNumbers[0] <= (DateTime(Date(_parameterNumbers[2], _parameterNumbers[1], 1), TimeOfDay(0, 0, 0)).daysInMonth)
-					&& _parameterNumbers[1] >= 1 && _parameterNumbers[1] <= 12)) {
-						result ~= "Error: Date not set with date time";
+					try {
+						if (! (_parameterNumbers[0] > 0 &&
+							_parameterNumbers[0] <= (DateTime(Date(_parameterNumbers[2], _parameterNumbers[1], 1), TimeOfDay(0, 0, 0)).daysInMonth)
+						&& _parameterNumbers[1] >= 1 && _parameterNumbers[1] <= 12)) {
+							result ~= "Error: Date not set with date time";
+							break;
+						}
+					} catch(Exception e) {
+						result ~= "Error: Date not set with date time.. Invalid date: " ~
+							_parameterNumbers[0].to!string ~ "." ~
+							_parameterNumbers[1].to!string ~ "." ~
+							_parameterNumbers[2].to!string;
 						break;
 					}
 					
@@ -832,7 +843,7 @@ public:
 					}
 					try {
 						_taskMan.setDate(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
-					} catch(Error e) {
+					} catch(Exception e) {
 						result ~= "Error: Invalid date, try once more.";
 					}
 				}
@@ -885,9 +896,10 @@ public:
 				"%wd - whole date\n" ~
 				"%co - comment\n" ~
 				"%in - item number\n" ~
-				"*%st - start time\n" ~
-				"*%et - end time\n" ~
-				"*%sn - select number";
+				"%st - start time\n" ~
+				"%et - end time\n" ~ 
+				"%tl - time length\n" ~
+				"%sn - select number";
 			break;
 			case "customFormatList","cfl":
 				_taskMan.customFormatList(_parameterString);
@@ -1090,7 +1102,7 @@ public:
 			case "clearalltasks":
 				_taskMan.clearDoneTasks;
 			break;
-			case "ld":
+			case "ld", "load":
 				// Is it not the default
 				if ( _parameterString != "" ) // eg. ld"back"
 				{
@@ -1157,7 +1169,6 @@ public:
 		writeln("-".replicate(10));
 
 		Control c;
-		TaskMan t;
 
 		with(c) {
 			//string[] separateCommands(string line) {

@@ -1,3 +1,4 @@
+//#this
 //cfl"first line%nlsecond line #%cn [%cl] %dd whole: %wd {%co} %in? st%st et%et%nl"
 
 /**
@@ -40,7 +41,8 @@ enum TaskType {possibles, // list you choose from, done
 */
 enum Collum {left, right, straitDown};
 
-const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the categories, but another mixing problem! (left, right, strait down)."`;
+const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
+//const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the categories, but another mixing problem! (left, right, strait down)."`;
 //const VERSION = `Saturday sd"17.2.2018" >6pm - More done with GUI. Can't seem to get 0 - Bible to display in view categories!`;
 //const VERSION = `(Friday 11 3 2016). Noticed a random crash (with saving I think) :-\ 19.12.2014 => Also, not using 'fc' then"
 //	"sd has a weid effect, maybe some thing to do with 12 month I don't think 'cls' works for text tank "
@@ -83,14 +85,18 @@ const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the cate
 //const VERSION = "Monday September 27, 2010";
 //const VERSION = "Sunday September 26, 2010";
 
+/// Global for extra data that I couldn't hardly get otherwise
+string g_clipboard; //#this
+
 string timeString(DateTime time, bool includeSecond = false) {
 	with(time) {
 		auto secondText = second.to!string();
 
-		return format( "[%s:%02s%s%s]",
+		return format( "[%s:%02s%s.%02d%s]",
 				(hour == 0 || hour == 12 ? 12 : hour % 12), 
 				 minute,
 				 (includeSecond ? "." ~ (secondText.length == 1 ? "0" : "") ~ secondText : ""),
+				 second,
 				(hour < 12 ? "am" : "pm") );
 	}
 }
