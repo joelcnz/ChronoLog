@@ -34,6 +34,8 @@ class Task {
 private:
 	static bool _altColour; // alternate colours
 
+	bool _tagged = false;
+
 	int _id; // category
 	string _taskString;
 	string _comment;

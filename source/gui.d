@@ -30,6 +30,7 @@ private:
 	CheckBox _checkBoxTime,
 			_checkBoxEndTime,
 			_checkBoxAddCat;
+	Button _wrapToggle;
 
     TaskMan _taskMan;
     Control _control;
@@ -59,13 +60,13 @@ public:
 
 						EditBox {
 							id: editBoxMain
-							minWidth: 1100; minHeight: 460;
+							minWidth: 2220; minHeight: 1000;
 						}
 
 						TextWidget { text: "History:" }
 						EditBox {
 							id: editBoxHistory
-							minWidth: 1100; minHeight: 100;
+							minWidth: 2220; minHeight: 300;
 						}
 
 						HorizontalLayout {
@@ -75,8 +76,6 @@ public:
 
 							TextWidget { text: "Get/Set Reference(s):" }
 							EditLine { id: editLineId; text: "0"; minWidth: 400; maxWidth: 400 }
-
-							Button { id: buttonWrap; text: "Wrap Text" }
 						}
 
 						HorizontalLayout {
@@ -85,13 +84,14 @@ public:
 								id: textWidgetCategory
 								text: "(none set)"
 							}
+							Button { id: wrapToggle; text: "Unwrap" }
 						}
 
 						HorizontalLayout {
 							TextWidget { text: "Comment:" }
 							EditLine {
 								id: editLineComment
-								minWidth: 900
+								minWidth: 2000
 								text: ""
 							}
 						}
@@ -100,7 +100,7 @@ public:
 							TextWidget { text: "Command Input:" }
 							EditLine {
 								id: editLineCommand
-								minWidth: 400
+								minWidth: 1800
 							}
 							Button { id: buttonActivate; text: "Activate" }
 						}
@@ -116,9 +116,9 @@ public:
 						TextWidget { text: "Date:" }
 						EditLine { id: editLineDate; text: "1 1 2018"; minWidth: 100; maxWidth: 100 }
 						TextWidget { text: "Time:" }
-						HorizontalLayout { EditLine { id: editLineTime; text: "0 0 0"; minWidth: 100; maxWidth: 100 } CheckBox { id: checkBoxTime; } }
+						HorizontalLayout { EditLine { id: editLineTime; text: "0 0 0"; minWidth: 200; maxWidth: 200 } CheckBox { id: checkBoxTime; } }
 						TextWidget { text: "End Time:" }
-						HorizontalLayout { EditLine { id: editLineEndTime; text: "0 0 0"; minWidth: 100; maxWidth: 100 } CheckBox { id: checkBoxEndTime; } }
+						HorizontalLayout { EditLine { id: editLineEndTime; text: "0 0 0"; minWidth: 200; maxWidth: 200 } CheckBox { id: checkBoxEndTime; } }
 						TextWidget { text: "Duration:" }
 						EditLine { id: editLineDuration; text: "0 0 0"; minWidth: 100; maxWidth: 100 }
 						
@@ -144,6 +144,7 @@ public:
 		_editLineId = _window.mainWidget.childById!EditLine("editLineId");
 		_editLineAddCat = _window.mainWidget.childById!EditLine("editLineAddCat");
 		_textWidgetCategory = _window.mainWidget.childById!TextWidget("textWidgetCategory");
+		_wrapToggle = _window.mainWidget.childById!Button("wrapToggle");
 		_editLineDate = _window.mainWidget.childById!EditLine("editLineDate");
 		_editLineTime = _window.mainWidget.childById!EditLine("editLineTime");
 		_editLineEndTime = _window.mainWidget.childById!EditLine("editLineEndTime");
@@ -154,6 +155,22 @@ public:
 		_checkBoxAddCat = _window.mainWidget.childById!CheckBox("checkBoxAddCat");
 		_editLineCommand = _window.mainWidget.childById!EditLine("editLineCommand");
 		_textWidgetStatus = _window.mainWidget.childById!TextWidget("textWidgetStatus");
+
+		_editBoxMain.wordWrap = true;
+		_editBoxHistory.wordWrap = true;
+
+		_window.mainWidget.childById!Button("wrapToggle").click = delegate(Widget w) {
+			if (true == _editBoxMain.wordWrap) {
+				_editBoxMain.wordWrap = false;
+				_editBoxHistory.wordWrap = false;
+				_wrapToggle.text = "Wrap"d;
+			} else {
+				_editBoxMain.wordWrap = true;
+				_editBoxHistory.wordWrap = true;
+				_wrapToggle.text = "Unwrap"d;
+			}
+			return true;
+		};
 
 		_window.mainWidget.childById!Button("buttonProcess").click = delegate(Widget w) {
 			//#need more work
@@ -187,6 +204,7 @@ public:
 
 		_window.mainWidget.childById!Button("buttonClear").click = delegate(Widget w) {
 			_editBoxMain.text = ""d;
+			_taskMan.resetViewTasks;
 			addToHistory("Main edit box cleared");
 
 			return true;
@@ -204,60 +222,6 @@ public:
 		_editLineTime.text = time0;
 		_editLineEndTime.text = time0;
 		_editLineDuration.text = "0:0:0"d;
-
-		_window.mainWidget.childById!Button("buttonWrap").click = delegate(Widget w) {
-			import std.string: split, wrap;
-
-			dstring s;
-			auto paragraphs = _editBoxMain.text.split("\n");
-			foreach(line; paragraphs)
-				s ~= wrap(line, 116, null, null, 4);
-			_editBoxMain.text = s;
-
-			addToHistory("Text wrapped. (was ", paragraphs.length, " lines)");
-
-			return true;
-		};
-
-version(none) {
-	/+
-		EditLine editLineSpot;
-
-		_commandInputWindow = Platform.instance.createWindow(
-				"Command", null, WindowFlag.Resizable, 800, 50);
-
-		_commandInputWindow.mainWidget = parseML(q{
-			HorizontalLayout {
-				backgroundColor: "#C0E0E070" // semitransparent yellow background
-				HorizontalLayout {
-					TextWidget {
-						text: "Enter command:"
-					}
-					EditLine {
-						id: editLineSpot
-						minWidth: 500
-					}
-					Button {
-						id: buttonAction
-						text: "Action"
-					}
-				}
-			}
-		});
-
-		editLineSpot = _commandInputWindow.mainWidget.childById!EditLine("editLineSpot");
-
-		_commandInputWindow.mainWidget.childById!Button("buttonAction").click = delegate(Widget w) {
-			return processInputAndAddToMain(editLineSpot.text.to!string);
-		};
-
-		_window.mainWidget.childById!Button("buttonTest").click = delegate(Widget w) {
-			_commandInputWindow.show();
-
-			return true;
-		};
-	+/
-	} // version not work, comes up with a blank window
 
 		_window.mainWidget.childById!Button("buttonGet").click = delegate(Widget w) {
 			addToHistory("Get pressed for ", _editLineId.text);
@@ -364,7 +328,7 @@ version(none) {
 						}
 						string strNums = "";
 						foreach(num; from0 .. to0 + 1)
-							strNums ~= " " ~ num.to!string;
+							strNums ~= (num != from0 ? " " : "") ~ num.to!string;
 						_editLineId.text = strNums.to!dstring;
 						addToHistory("Using:", strNums, ", number", from0 != to0 ? "s" : "");
 					}

@@ -17,8 +17,8 @@
  * // Referance number                          |      Optional end time
  * // |                                         |      |         Optional time taken
  * // |  Task done    Date                      |      |         |          Optional comment
- * // |\ |---------\  |-----------------------\ |----\ |-------\ |--------\ |---------\
- * // 17 Achievement  Monday September 20, 2010 5:43pm -> 6:00pm 20 minutes Bit of work
+ * // |\ |---------\  |-----------------------\ |----\ |-------\ |--------\ |--------------------\
+ * // 17 Achievement  Monday September 20, 2010 5:43pm -> 6:00pm 20 minutes First bit of paid work
  * // Binary form:
  * // (int for id) (int for string task length) (string task) (long for date and time etc) (int for hours minutes) (int for string length) (string comment)
  * I think now it has varibles for whether to show time of day or not. For start time, end time and time duration
@@ -73,6 +73,16 @@ extern (C) int UIAppMain(string[] args) {
 		writeln;
 	}
 	
+	const SCALE_FACTOR = 2.0f;
+
+        // just in case, but dlangui package seems to import pretty much everything
+        import dlangui.core.types;
+
+        // pretty much self explanatory, where 96 DPI is "normal" 100% zoom
+        // alternatively you can set it to your screen real DPI or PPI or whatever it is called now
+        // however for 4k with 144 DPI IIRC I set it to 1.25 scale because 1.5 was too big and/or didn't match WPF/native elements
+	overrideScreenDPI = cast(int)(96f * SCALE_FACTOR);
+
 	TaskMan taskMan = new TaskMan; // handles the task objects
 	
 	processCategory(taskMan);

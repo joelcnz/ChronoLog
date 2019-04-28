@@ -264,6 +264,8 @@ public:
 
 		_taskMan = taskMan;
 		_taskMan.loadDoneTasks("tasklog.bin");
+
+		_taskMan.resetViewTasks;
 	}
 
 	/**

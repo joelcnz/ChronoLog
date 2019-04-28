@@ -27,7 +27,8 @@ private {
 class TaskMan {
 private:
 	Task[] _possibleTasks, // possible tasks are the tasks you choose from
-		_doneTasks; // done tasks are the tasks that you have done
+		_doneTasks, // done tasks are the tasks that you have done
+		_viewTasks; // for searching and stuff
 	int _selectedTaskIndex; // or gotten task to go with 'g' at command module
 	//#Possible tasks
 	struct TaskHidden {
@@ -49,23 +50,31 @@ public:
 		string cformat() { return _cformat; }
 	}
 
+	void resetViewTasks() {
+		_viewTasks = _doneTasks;
+	}
+
 	auto listFoundText(in string phrase, in bool isWordSearch = false) {
 		import std.algorithm: canFind, all;
-		import std.string : indexOf, split;
+		import std.string: indexOf, split;
 
 		string result;
 
 		int numberOfItem = 1; //#redundant, why not use cast(int)(i + 1)
 
-		foreach(i, task; _doneTasks) {
+		Task[] tasks;
+		foreach(i, task; _viewTasks) {
 			if ((! isWordSearch && indexOf(task.comment(), phrase) != -1) ||
 				(isWordSearch && phrase.split.all!(word => task.comment.canFind(word)))) {
+				tasks ~= task;
 				immutable tex = task.viewInfo(numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat);
 				_textTank ~= tex;
 				result ~= tex;
 				numberOfItem++;
 			}
 		}
+		if (tasks.length)
+			_viewTasks = tasks;
 
 		return result;
 	}
@@ -73,11 +82,15 @@ public:
 	auto getRange(int start, int end) {
 		string result = "\n";
 
+		Task[] tasks;
 		foreach(i, task; _doneTasks[start .. end + 1]) {
 			immutable tex = task.viewInfo(cast(int)i, cast(int)(start + i), Collum.straitDown, TaskType.done, _cformat);
+			tasks ~= task;
 			_textTank ~= tex;
 			result ~= tex;
 		}
+		if (tasks.length)
+			_viewTasks = tasks;
 
 		return result;
 	}
@@ -96,11 +109,12 @@ public:
 		im=fm;
 		iy=fy;
 
-		Task[] taskTank;
+		Task[] taskTank,
+			tasks;
 
 		if (tod != 0)
 			while(true) { // while
-				foreach(i, task; _doneTasks) {
+				foreach(i, task; _viewTasks) {
 					with(task.dateTime)
 						if (day == iday && month == im && year == iy) {
 							with(task)
@@ -111,6 +125,7 @@ public:
 							immutable info = task.viewInfo(
 								numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
 							_textTank ~= info;
+							tasks ~= task;
 							result ~= info;
 							numberOfItem++;
 							found = true;
@@ -132,8 +147,9 @@ public:
 					last = true; //#how did the goto get here?
 			} // while
 
-		if (tod == 0)
-			foreach(i, task; _doneTasks) {
+		if (tod == 0) {
+			string[] comments;
+			foreach(i, task; _viewTasks) {
 				with(task.dateTime)
 					if (day == fd && month == fm && year == fy) {
 						with(task)
@@ -145,14 +161,20 @@ public:
 						immutable info = task.viewInfo(
 							numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
 						_textTank ~= info;
+						tasks ~= task;
 						result ~= info;
 						numberOfItem++;
 						found = true;
 					}
 			}
+		}
 
-		if (! found)
+		if (! found) {
 			result = "No results!";
+		} else {
+			if (tasks.length)
+				_viewTasks = tasks;
+		}
 /+
 //#can't work it out
 //Bible [12:34.56] - read and laydown
@@ -217,14 +239,14 @@ public:
 	auto setTime(int hour, int minute,int second) {
 		_doneTasks[ _selectedTaskIndex ].setTime(hour, minute, second);
 
-		return format("Set time/start time H:M:S %s:%s:%s", hour, minute, second);
+		return format("Set time/start time %s:%s:%s", hour, minute, second);
 	}
 
 	/// set the end time of day
 	auto setEndTime(int hour, int minute, int second) {
 		_doneTasks[ _selectedTaskIndex ].setEndTime(hour, minute, second);
 
-		return format("End time H:M:S %s:%s:%s", hour, minute, second);
+		return format("End time %s:%s:%s", hour, minute, second);
 	}
 
 	/// set time length for task
@@ -477,16 +499,18 @@ public:
 
 		int numberOfItem = 1;
 
-		foreach ( i, task; _doneTasks )
-		{
-			if ( task.id == typeId )
-			{
+		Task[] tasks;
+		foreach ( i, task; _viewTasks ) {
+			if ( task.id == typeId ) {
+				tasks ~= task;
 				immutable tex = task.viewInfo( numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
 				_textTank ~= tex;
 				result ~= tex;
 				numberOfItem++;
 			}
 		}
+		if (tasks.length)
+			_viewTasks = tasks;
 
 		return result;
 	}
