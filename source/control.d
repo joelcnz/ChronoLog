@@ -1,3 +1,4 @@
+//#includes days
 //#new (l"1,2,3" wasn't working - had to be space seperated) 6 9 2018
 //#may change it to 'ErroR:' and edit all the connected stuff
 //#Why didn't this trigger when I tested it?!
@@ -780,11 +781,11 @@ public:
 			case "fileComands", "fc":
 				result ~= "\n" ~ processCommandsFromTextFileOrEditBox();
 			break;
-			case "printDay", "pd":
+			case "printDay", "pd": //#includes days
 				if (_parameterNumbers.length == 3) {
-						result = _taskMan.printDay(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
+						result = _taskMan.printDayOrDays(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]);
 				} else if (_parameterNumbers.length == 6) {
-						result = _taskMan.printDay(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2],
+						result = _taskMan.printDayOrDays(_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2],
 										  _parameterNumbers[3], _parameterNumbers[4], _parameterNumbers[5]);
 				} else {
 					result ~= "Error with printing a day or range of days";

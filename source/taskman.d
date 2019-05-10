@@ -1,3 +1,6 @@
+//# %in - not setup right 4.5.2019
+
+//#printDay (should be days)
 //#sort
 //#raw write?
 //#how did the goto get here?
@@ -21,7 +24,7 @@ private {
 
 //	import terminal;
 	import jtask.taskmanbb, jtask.basebb;
-	import base, task;
+	import base, jmisc, task;
 }
 
 class TaskMan {
@@ -95,7 +98,22 @@ public:
 		return result;
 	}
 
-	string printDay(int fd, int fm, int fy, int tod = 0, int tom = 0, int toy = 0) {
+	string printDayOrDays(int fd, int fm, int fy, int tod = 0, int tom = 0, int toy = 0) {
+		auto currentDate = cast(DateTime)Clock.currTime();
+		try {
+			if (tod == 0)
+				if (Date(fy, fm, fd) > currentDate.date)
+					throw new Exception("From date set in the future");
+			if (tod != 0) {
+				if (toy < fy)
+					throw new Exception("To year, before from year");
+				if (Date(toy, tom,tod) > currentDate.date)
+					throw new Exception("To date, set in the future");
+			}
+		} catch(Exception e) {
+			return "Error: " ~ e.msg ~ ", check your input..";
+		}
+
 		import std.range;
 
 		string result;
@@ -112,25 +130,53 @@ public:
 		Task[] taskTank,
 			tasks;
 
+		void doDay(int d, int m, int y) {
+			string[] comments;
+			Task[] select;
+			foreach(i, task; _viewTasks)
+				with(task.dateTime)
+					if (day == d && month == m && year == y)
+						with(task) {
+							taskTank ~= new Task(id, taskString,
+								timeLength, comment,
+								dateTime, displayTimeFlag,
+								endTime, displayEndTimeFlag);
+
+							select ~= new Task(id, taskString,
+								timeLength, comment,
+								dateTime, displayTimeFlag,
+								endTime, displayEndTimeFlag);
+							select[$ - 1].listNumber = cast(int)i;
+							comments ~= comment;
+						}
+			string categories;
+			int cnum;
+			foreach(i, task; select) { // loop through all days tasks
+				if (comments[i] == "<skip>")
+					continue;
+				categories = "";
+					foreach(j; 0 .. select.length) { // loop through all the comments
+						if (select[i].comment == comments[j] && comments[j] != "" && task.comment != "" && j != i) {
+							comments[i] = comments[j] = "<skip>";
+							categories ~= text(select[j].listNumber, ") ", select[j].id, " - ", select[j].taskString, ", ");
+							cnum += 1;
+						}
+					}
+
+				//# %in - not setup right 4.5.2019
+				immutable info = categories ~ task.viewInfo(
+					cast(int) + 1, task.listNumber, Collum.straitDown, TaskType.done, _cformat );
+				_textTank ~= info;
+				tasks ~= task;
+				result ~= info;
+				numberOfItem++;
+				found = true;
+			}
+		} // doDay
+
 		if (tod != 0)
 			while(true) { // while
-				foreach(i, task; _viewTasks) {
-					with(task.dateTime)
-						if (day == iday && month == im && year == iy) {
-							with(task)
-								taskTank ~= new Task(cast(int)i, taskString,
-								  timeLength, comment,
-								  dateTime, displayTimeFlag,
-								  endTime, displayEndTimeFlag);
-							immutable info = task.viewInfo(
-								numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
-							_textTank ~= info;
-							tasks ~= task;
-							result ~= info;
-							numberOfItem++;
-							found = true;
-						}
-				}
+				doDay(iday, im, iy);
 
 				iday++;
 				if (iday > 31) {
@@ -143,31 +189,12 @@ public:
 				}
 				if (last)
 					break;
-				if (iday == tod && im == tom && iy == toy)
+				if (iday >= tod && im >= tom && iy >= toy)
 					last = true; //#how did the goto get here?
 			} // while
 
-		if (tod == 0) {
-			string[] comments;
-			foreach(i, task; _viewTasks) {
-				with(task.dateTime)
-					if (day == fd && month == fm && year == fy) {
-						with(task)
-							taskTank ~= new Task(cast(int)i, taskString,
-								timeLength, comment,
-								dateTime, displayTimeFlag,
-								endTime, displayEndTimeFlag);
-
-						immutable info = task.viewInfo(
-							numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
-						_textTank ~= info;
-						tasks ~= task;
-						result ~= info;
-						numberOfItem++;
-						found = true;
-					}
-			}
-		}
+		if (tod == 0)
+			doDay(fd, fm, fy);
 
 		if (! found) {
 			result = "No results!";
@@ -175,6 +202,9 @@ public:
 			if (tasks.length)
 				_viewTasks = tasks;
 		}
+
+		return result;
+	} //#printDay (should be days)
 /+
 //#can't work it out
 //Bible [12:34.56] - read and laydown
@@ -192,8 +222,6 @@ public:
 			}
 		}
 +/		
-		return result;
-	} // printDay
 
 	void saveTextTank(string fileName) {
 		immutable fileWrite = "w";

@@ -36,6 +36,7 @@ private:
 
 	bool _tagged = false;
 
+	int _listNumber;
 	int _id; // category
 	string _taskString;
 	string _comment;
@@ -105,6 +106,8 @@ public:
 		_displayEndTimeFlag = displayEndTimeFlag0;
 	}
 	
+	int listNumber() { return _listNumber; }
+	void listNumber(int listNumber0) { _listNumber = listNumber0; }
 	@property int id() { return _id; } // getter
 	@property string taskString() { return _taskString; } // getter
 	@property TimeLength timeLength() { return _length; } // getter

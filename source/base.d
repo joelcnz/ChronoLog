@@ -41,7 +41,10 @@ enum TaskType {possibles, // list you choose from, done
 */
 enum Collum {left, right, straitDown};
 
-const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
+const VERSION = `Sunday: 49 sd"4,5,2019" c"Worked on g_clipboard stuff in base.d, not implementing it yet."`;
+//const VERSION = `Saturday: 49 sd"4,5,2019" c"Got grouped tasks working. Was programming outside a quarterly` ~
+//		` in Mangakino"`;
+//const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
 //const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the categories, but another mixing problem! (left, right, strait down)."`;
 //const VERSION = `Saturday sd"17.2.2018" >6pm - More done with GUI. Can't seem to get 0 - Bible to display in view categories!`;
 //const VERSION = `(Friday 11 3 2016). Noticed a random crash (with saving I think) :-\ 19.12.2014 => Also, not using 'fc' then"
@@ -86,7 +89,8 @@ const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
 //const VERSION = "Sunday September 26, 2010";
 
 /// Global for extra data that I couldn't hardly get otherwise
-string g_clipboard; //#this
+enum Clip {first, second, third}
+string[3] g_clipboard; //#this (g_clipboard[Clip.first] = task.to!string; )
 
 string timeString(DateTime time, bool includeSecond = false) {
 	with(time) {
@@ -133,7 +137,7 @@ void processCategory(ref TaskMan taskMan) {
 		{
 			writeln("Hick. line: ", line); // print lines that can't be valid and show way line it's on
 		}
-		++line; // get ready for next line
+		line += 1; // get ready for next line
 	}
 	
 	f.close; // file processing done
