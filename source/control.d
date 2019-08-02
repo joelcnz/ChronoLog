@@ -1,3 +1,5 @@
+//#crashes
+//#there's another double notes character, to do as well
 //#includes days
 //#new (l"1,2,3" wasn't working - had to be space seperated) 6 9 2018
 //#may change it to 'ErroR:' and edit all the connected stuff
@@ -26,7 +28,6 @@
 //#only catergory numbers
 //#stores each segment eg. 'st"10 20 0"' 'c"Went to bed after programming"'
 
-//#crashes with numbers
 //#what?
 //#not sure about strip
 //#Hmmm
@@ -468,14 +469,9 @@ public:
 
 	//#don't understand set up here
 	string setUp(ref string input) {
-		bool notDigit(char c) {
-			return ! std.ascii.isDigit(c);
-		}
-
 		if (input.length > 1) {
 			string type = getType( input );
 			_parameterString = getString( type, input );
-			//_parameterString = getString2(input );
 			_parameterNumbers = getNums( type, input );
 		}
 
@@ -484,7 +480,6 @@ public:
 			foreach(item; list)
 				if (a == item)
 					return false; // it is in the list
-			
 			return true;
 		}
 		
@@ -500,7 +495,7 @@ public:
 			
 			if (ifNotInListOfcommands(type, "sd st et l c")) // if v p etc then don't do more than one //#what?
 				break;
-		} // Foreach
+		} // for loop
 
 		_command = getType(input);
 		_parameterString = getString(_command, input);
@@ -511,21 +506,13 @@ public:
 	unittest {
 		Control c;
 		string t = "rng-1";
-		writeln(c.setUp(t));
+		jecho(c.setUp(t));
 	}
 
 	/// Find the end of the type in input, looking for a number or a quote
-	string getType(string input)
-	{
-		bool hit(char c) {
-			import std.algorithm: canFind;
-
-			//return c.inPattern(std.ascii.digits ~ '"');
-			return (std.ascii.digits ~ `"`).canFind(c);
-		}
-		
+	string getType(string input) {
 		foreach(i, c; input)
-			if (true == hit(c)) // eg lt50 -> 'lt' or et"1 2 3" -> et or v -> 'v'
+			if (true == (std.ascii.digits ~ `"`).canFind(c)) // eg lt50 -> 'lt' or et"1 2 3" -> et or v -> 'v'
 				return _type = input[ 0 .. i];
 
 		return input; // no type //#why not '""' - because it might be 'v' for example
@@ -623,21 +610,12 @@ public:
 		import std.ascii : isDigit;
 
 		string[] lines;
-		immutable textFile = _parameterString.setExtension(".txt");
-
-		if (sourceTxt == "" && ! textFile.exists) {
-			result = "Did not find file '" ~ textFile ~ "'";
-		} else {
+		if (sourceTxt.length) {
 			string[] sourceLines;
-			if (sourceTxt != "") {
-				import std.string : replace;
+			import std.string : replace;
 
-				sourceLines = sourceTxt.replace("”", `"`).split("\n");
-			} else {
-				//#process text file not supported any more
-				//sourceLines = File(textFile, "r").byLine();
-				return "process text file not supported any more! - Use the (Process!) button";
-			}
+			//#there's another double notes character, to do as well
+			sourceLines = sourceTxt.replace("”", `"`).split("\n");
 
 			_autoInput.length = 0;
 			foreach(commandFrmFileLine; sourceLines) { // more of a proper test, can keep adding it self to the document
@@ -645,11 +623,9 @@ public:
 					auto line = commandFrmFileLine.strip;
 					if (line[0].isDigit) {
 						lines ~= line;
-						//result ~= line ~ "\n";
 					} else {
 						if (lines.length > 0) {
 							lines[$ - 1] ~= " " ~ line; //#untested 11 2 2018 - this is need for parsing commandfile.txt
-							//result ~= " " ~ line;
 						} else {
 							result ~= "Must have a category number at the first line of the stuff in the text box!"; //#Why didn't this trigger when I tested it?!
 
@@ -711,7 +687,8 @@ public:
 							import std.conv: text;
 							import std.string: strip;
 
-							result ~= text("Command return value: #2[", command, "], Id: ", cast(immutable int)_taskMan.numberOfTasks - 1, ", Add: ", add, ", Seg: [", seg, "], String, (", _parameterString, "), Numbers: ", _parameterNumbers, "\n");
+							result ~= text("Command return value: #2[", command, "], Id: ", cast(immutable int)_taskMan.numberOfTasks - 1,
+								", Add: ", add, ", Seg: [", seg, "], String, (", _parameterString, "), Numbers: ", _parameterNumbers, "\n");
 
 							if (command.canFind("Error:")) { //#may change it to 'ErroR:' and edit all the connected stuff
 								writeln(command);
@@ -724,7 +701,8 @@ public:
 			} // lines
 			_autoInputPos = 0; // set postion to start segment
 			_autoLines = lines;
-		}
+		} else 
+			result = "Nothing to process..";
 
 		_done = true;
 
@@ -733,7 +711,14 @@ public:
 
 	unittest {
 		Control c;
-		//jecho(c.processCommandsFromTextFileOrEditBox(`13 st"1 2 3" c"Test"`));
+		
+		with(c) {
+			immutable script = q{13 st"1 2 3" c"Test"};
+			script.writeln;
+			//_taskMan = new TaskMan; //#need this for _taskMan of type taskman.TaskMan
+			c.setup(_taskMan);
+			c.processCommandsFromTextFileOrEditBox(script); //#crashes
+		}
 	}
 
 	/// do command eg. st"20 53 0", h, or rng"-5 -1" etc.
@@ -1186,6 +1171,5 @@ public:
 			mixin(trace("type1 type2 segments".split));
 		    //doCommand(recNum, type, _parameterNumbers, parameterString, isNumbercs, done);
 		}
-
 	}
 }

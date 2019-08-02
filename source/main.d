@@ -41,17 +41,6 @@ private {
 	//import jtask.taskmanbb;
 }
 
-/+
-//#not gotten to work with DUB
-extern(C) char* readline(const(char)* prompt);
-extern(C) void add_history(const(char)* prompt);
-
-pragma(lib, "readline");
-pragma(lib, "curses");
-+/
-
-//pragma(lib, "jtask");
-
 //version = DUnit; // out of date library, I think
 
 /**
