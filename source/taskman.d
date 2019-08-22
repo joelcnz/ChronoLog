@@ -521,7 +521,7 @@ public:
 //		void viewInfo( int indexNumber, int collum, TaskType taskType = TaskType.possibles )
 
 	/// List just by the selected type (eg. 'got up', but its number)
-	auto listByType( int typeId, string cformat )
+	auto listByType( int[] typeIds, string cformat )
 	{
 		string result = "\n";
 
@@ -529,13 +529,14 @@ public:
 
 		Task[] tasks;
 		foreach ( i, task; _viewTasks ) {
-			if ( task.id == typeId ) {
-				tasks ~= task;
-				immutable tex = task.viewInfo( numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
-				_textTank ~= tex;
-				result ~= tex;
-				numberOfItem++;
-			}
+			foreach(typeId; typeIds)
+				if ( task.id == typeId ) {
+					tasks ~= task;
+					immutable tex = task.viewInfo( numberOfItem, cast(int)i, Collum.straitDown, TaskType.done, _cformat );
+					_textTank ~= tex;
+					result ~= tex;
+					numberOfItem++;
+				}
 		}
 		if (tasks.length)
 			_viewTasks = tasks;

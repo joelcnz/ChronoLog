@@ -994,9 +994,9 @@ public:
 			break;
 			// list the entries of selected type
 			case "lt":
-				if ( _parameterNumbers.length == 1 )
+				if ( _parameterNumbers.length )
 				{
-					result ~= _taskMan.listByType( _parameterNumbers[0], _taskMan.cformat );
+					result ~= _taskMan.listByType( _parameterNumbers, _taskMan.cformat );
 				}
 			break;
 			// Remove task
