@@ -1,3 +1,5 @@
+//#Maybe rename function
+//#Should use JMisc lib instead of this
 //#this
 //cfl"first line%nlsecond line #%cn [%cl] %dd whole: %wd {%co} %in? st%st et%et%nl"
 
@@ -35,13 +37,15 @@ private {
 */
 enum TaskType {possibles, // list you choose from, done
 			   done,
-		   	   allDone}; // tasks you've added to the log
+		   	   allDone} // tasks you've added to the log
 /**
 	For displaying possibles collums
 */
-enum Collum {left, right, straitDown};
+enum Collum {left, right, straitDown}
 
-const VERSION = `Sunday: 49 sd"4,5,2019" c"Worked on g_clipboard stuff in base.d, not implementing it yet."`;
+/// Status
+const VERSION = `Thursday: 49 sd"29,8,2019" c"Had a look at clipboard stuff a bit."`;
+//const VERSION = `Sunday: 49 sd"4,5,2019" c"Worked on g_clipboard stuff in base.d, not implementing it yet."`;
 //const VERSION = `Saturday: 49 sd"4,5,2019" c"Got grouped tasks working. Was programming outside a quarterly` ~
 //		` in Mangakino"`;
 //const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
@@ -90,8 +94,10 @@ const VERSION = `Sunday: 49 sd"4,5,2019" c"Worked on g_clipboard stuff in base.d
 
 /// Global for extra data that I couldn't hardly get otherwise
 enum Clip {first, second, third}
-string[3] g_clipboard; //#this (g_clipboard[Clip.first] = task.to!string; )
+string[3] g_clipboard; /// For getting more feed back //#this (g_clipboard[Clip.first] = task.to!string; )
 
+//#Should use JMisc lib instead of this
+/// Get AM/PM time
 string timeString(DateTime time, bool includeSecond = false) {
 	with(time) {
 		auto secondText = second.to!string();
@@ -105,6 +111,8 @@ string timeString(DateTime time, bool includeSecond = false) {
 	}
 }
 
+//#Maybe rename function
+/// Process categories
 void processCategory(ref TaskMan taskMan) {
 	auto dummyDate = cast(DateTime)Clock.currTime();
 	taskMan.resetCategorys();
@@ -143,6 +151,7 @@ void processCategory(ref TaskMan taskMan) {
 	f.close; // file processing done
 }
 
+/// Add hidden tasks
 void tasksHidden(ref TaskMan taskMan, int remove = -1) {
 	taskMan.clearHidden();
 	// Register hidden tasks
@@ -165,6 +174,6 @@ void tasksHidden(ref TaskMan taskMan, int remove = -1) {
 
 unittest {
 	mixin(test("1 == 1", "is one actually equal to one"));
-	string s = string.init;
+	immutable s = string.init;
 	mixin(test("s is null", "string is null"));
 }

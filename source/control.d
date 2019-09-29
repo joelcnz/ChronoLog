@@ -183,7 +183,7 @@ private:
 //	public mixin TestMixin;
 	int _commandCount;
 	TaskMan _taskMan; // instance variable - in charge of the tasks
-	enum InputType {userInput, autoInput};
+	enum InputType {userInput, autoInput}
 	Control.InputType _inputType; //#bit different
 	struct AutoInput {
 		string command;
@@ -211,7 +211,7 @@ private:
 	int[] _adds; // catergory list
 	string[] _segments;
 	int[] _recNums; // the number you use to select from the list of done tasks
-	enum Switch { alphaNum, space, quote }; // for separateCommands method
+	enum Switch { alphaNum, space, quote } // for separateCommands method
 	int _catPos;
 	//bool _addIds;
 
@@ -255,8 +255,10 @@ private:
 		s = "a 2 3"; assert(t.arrayCatNumbers(s) == []); assert(s == "a 2 3");
 	}
 public:
+	/// Getter/setter
 	@property ref TaskMan taskMan() { return _taskMan; }
 
+	/// Setup task manager
 	void setup(TaskMan taskMan) {
 		import std.file: readText;
 
@@ -395,6 +397,7 @@ public:
 		//assert(c.separateCommands("rng-1") == ["rng-1"]);
 	}
 
+	/// 
 	auto processInput(string input, int[] selection = []) {
 		//#Maybe add task entries here for list or 1 id
 		std.file.append("errorlog.txt", input ~ "\n");

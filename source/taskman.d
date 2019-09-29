@@ -521,7 +521,7 @@ public:
 //		void viewInfo( int indexNumber, int collum, TaskType taskType = TaskType.possibles )
 
 	/// List just by the selected type (eg. 'got up', but its number)
-	auto listByType( int[] typeIds, string cformat )
+	auto listByType(int[] typeIds, string cformat)
 	{
 		string result = "\n";
 
