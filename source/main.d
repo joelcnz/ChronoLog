@@ -1,11 +1,5 @@
-//#not gotten to work with DUB
 // I think I've done this - Need to create knew entries with each id in the list (control.d)
 
-//#Hmm.. what time is it?
-//# hourFromTime - says 7 for when it's 7pm, I think maybe 12 hours out, must try it in the morning.
-//#file load
-/// Title: Hack job to start with, all in one source file.
-/// Date: September 20, 2010 12:00 -800
 /**
  * Clearly defined:
  * Possible tasks = the list of tasks you choose from to add<br>
@@ -35,23 +29,11 @@ private {
 	import std.stdio;
 	import std.string;
 
-	import base, gui, task, taskman;
+	import base, maingui, task, taskman;
 
-	import dlangui;
-	//import jtask.taskmanbb;
 }
 
-//version = DUnit; // out of date library, I think
-
-/**
-	Title: Start of program
-	Loads the task possibles from a text file, processes them and adds them to the task object.<br>
-	Then creates a control object and runs its run method.
-*/
-mixin APP_ENTRY_POINT;
-
-/// entry point for dlangui based application
-extern (C) int UIAppMain(string[] args) {
+void main(string[] args) {
 	scope(exit) {
 		writeln;
 		writeln(" ##");
@@ -61,26 +43,36 @@ extern (C) int UIAppMain(string[] args) {
 		writeln(" ##");
 		writeln;
 	}
-	
-	const SCALE_FACTOR = 2.0f;
 
-        // just in case, but dlangui package seems to import pretty much everything
-        import dlangui.core.types;
+	Main.init(args);
 
-        // pretty much self explanatory, where 96 DPI is "normal" 100% zoom
-        // alternatively you can set it to your screen real DPI or PPI or whatever it is called now
-        // however for 4k with 144 DPI IIRC I set it to 1.25 scale because 1.5 was too big and/or didn't match WPF/native elements
-	overrideScreenDPI = cast(int)(96f * SCALE_FACTOR);
+	g_RigWindow = new RigWindow();
 
-	TaskMan taskMan = new TaskMan; // handles the task objects
-	
-	processCategory(taskMan);
-	tasksHidden(taskMan);
-	Gui guj;
-	guj.setup(taskMan);
-	//Control control; // declare a control object
-	//control.setup(taskMan); // pass task manager object to control methods
+	import std.string : chomp;
+	import jmisc : gh;
 
-    // run message loop
-    return Platform.instance.enterMessageLoop();
+	immutable fileName = "entryboxtexts.txt";
+	enum Type {CATEGORY, GETSETS, COMMENT, COMMAND, ADD_CATERGORY_TICK_BOX}
+	int i;
+	foreach(data; File(fileName).byLine) {
+		auto line = data.to!string.chomp;
+		if (line.length)
+			switch(i) with (Type) {
+				default: gh(fileName ~ " - error"); return;
+				case CATEGORY: g_RigWindow.getAppBox.getMainTextViewAndDown.getCategoryRefBox.getCatEntry.setText = line; break;
+				case GETSETS: g_RigWindow.getAppBox.getMainTextViewAndDown.getCategoryRefBox.getRefEntry.setText = line; break;
+				case COMMENT: g_RigWindow.getAppBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.setText = line; break;
+				case COMMAND: g_RigWindow.getAppBox.getMainTextViewAndDown.getCommandEntryBox.getCommandEntry.setText = line; break;
+				case ADD_CATERGORY_TICK_BOX:
+					g_RigWindow.getAppBox.getMainTextViewAndDown.getCategoryRefBox.getCatCheckButton.setActive(line == "1");
+				break;
+			}
+		i += 1;
+	}
+	if (i - 1 < Type.max.to!int) {
+		gh(fileName ~ " - error");
+		return;
+	}
+
+	Main.run();
 }

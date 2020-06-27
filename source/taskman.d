@@ -503,11 +503,12 @@ public:
 	/// remove from the done tasks list
 	auto removeAt(int index)
 	{
-		string result = "\n";
+		string result;
 
 		if ( index < _doneTasks.length && index >= 0 )
 		{
-			result ~= "Deleting (enter 'ld' to revert to last save) - " ~ _doneTasks[index].viewInfo(0, index, TaskType.done);
+			result ~= text("Deleting (enter 'ld' to revert to last save) - (", index, ") " ~
+				_doneTasks[index].viewInfo(0, index, TaskType.done));
 			_doneTasks = _doneTasks[0 .. index] ~ _doneTasks[index + 1 .. $];
 		}
 		else

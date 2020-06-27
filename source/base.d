@@ -1,5 +1,4 @@
 //#Maybe rename function
-//#Should use JMisc lib instead of this
 //#this
 //cfl"first line%nlsecond line #%cn [%cl] %dd whole: %wd {%co} %in? st%st et%et%nl"
 
@@ -19,6 +18,34 @@ Get sort working.
 */
 module base;
 
+public:
+import gtk.Main;
+import gtk.MainWindow;
+import gtk.Grid;
+import gtk.ComboBoxText;
+import gtk.Box;
+import gtk.Entry;
+import gtk.Label;
+import gtk.Button;
+import gtk.CheckButton;
+import gtk.TextTagTable;
+import gtk.TextBuffer;
+import gtk.TextView;
+import gtk.Clipboard;
+import gtk.Adjustment;
+import gtk.ScrolledWindow;
+import gtk.ViewPort;
+import gtk.TextIter; // probably idle
+import gtk.TextMark; // idle
+import gtk.AccelGroup;
+import gtk.MenuItem;
+import gtk.Window;
+import gtk.Widget;
+import gtk.HeaderBar;
+
+import gdk.Event;
+import gdk.Keysyms;
+
 private {
 	import std.stdio;
 	import std.string;
@@ -30,8 +57,9 @@ private {
 
 	import jmisc;
 	import jtask.basebb;
-	import task, taskman, control;
+	import maingui, task, taskman, control;
 }
+
 /**
 	Eg. displaying tasks. either the tasks that you choose from (TaskType.possibles) or the task done list (TaskType.done)
 */
@@ -44,72 +72,152 @@ enum TaskType {possibles, // list you choose from, done
 enum Collum {left, right, straitDown}
 
 /// Status
-const VERSION = `Thursday: 49 sd"29,8,2019" c"Had a look at clipboard stuff a bit."`;
-//const VERSION = `Sunday: 49 sd"4,5,2019" c"Worked on g_clipboard stuff in base.d, not implementing it yet."`;
-//const VERSION = `Saturday: 49 sd"4,5,2019" c"Got grouped tasks working. Was programming outside a quarterly` ~
-//		` in Mangakino"`;
-//const VERSION = `Thursday: 49 sd"6,9,2018" c""`;
-//const VERSION = `Thursday sd"1.3.2018" c"Was going to try 3 collums for the categories, but another mixing problem! (left, right, strait down)."`;
-//const VERSION = `Saturday sd"17.2.2018" >6pm - More done with GUI. Can't seem to get 0 - Bible to display in view categories!`;
-//const VERSION = `(Friday 11 3 2016). Noticed a random crash (with saving I think) :-\ 19.12.2014 => Also, not using 'fc' then"
-//	"sd has a weid effect, maybe some thing to do with 12 month I don't think 'cls' works for text tank "
-//		"(eg instead put eg lt109 and save the tank, this avoids repeats.)"`;
-//const VERSION = `Thursday sd"11 9 2014" c"Looks like user input (as aposed to from a file) is working too."`;
-//const VERSION = `Sunday sd"7 9 2014" c"Now can use it again. Still stuff doesn't work though."`;
-//const VERSION = `Saturday sd"19 4 2014 - got some where"`;
-//const VERSION = `Sunday sd"25 3 2014"`;
-//const VERSION = `Monday sd"24 3 2014"`;
-//const VERSION = `Sunday sd"23 3 2014"`;
-//const VERSION = `Saturday sd"22 3 2014"`;
-//const VERSION = `Friday sd"21 3 2014"`;
-//const VERSION = `Thursday March 20, 2014`;
-//const VERSION = `Wednesday st"2 0 34" March 19, 2014`;
-//const VERSION = `Tuesday st"11 16 43" March 18, 2014`;
-//const VERSION = `Monday et"15 50 51" March 17, 2014`;
-//const VERSION = "Sunday [10:30pm] March 16, 2014";
-//const VERSION = "Saturday [2:36.37pm] March 15, 2014";
-//const VERSION = "Friday [4:06pm] March 14, 2014";
-//const VERSION = "Wednesday March 12, 2014"; -------
-//const VERSION = "Tuesday February 19, 2013";
-//const VERSION = "Friday October 19, 2012";
-//const VERSION = "Saturday October 22, 2011";
-//const VERSION = "Tueday October 18, 2011";
-//const VERSION = "Monday October 17, 2011";
-//const VERSION = "Saturday October 15, 2011";
-//const VERSION = "Friday October 14, 2011";
-//const VERSION = "Thursday October 13, 2011";
-//const VERSION = "Wednesday October 12, 2011";
-//const VERSION = "Friday December 3, 2010";
-//const VERSION = "Friday November 26, 2010";
-//const VERSION = "Saturday October 23, 2010";
-//const VERSION = "Wednesday October 13, 2010";
-//const VERSION = "Tuesday October 12, 2010";
-//const VERSION = "Sunday October 10, 2010";
-//const VERSION = "Saturday October 9, 2010";
-//const VERSION = "Friday October 1, 2010";
-//const VERSION = "Thursday September 30, 2010";
-//const VERSION = "Tuesday September 28, 2010";
-//const VERSION = "Monday September 27, 2010";
-//const VERSION = "Sunday September 26, 2010";
+//const VERSION = `Saturday: 49 sd"30,5,2020" c"Started GtkD version of ChronoLog. Got all the widgets up."`;
+const VERSION = `Sunday: 49 sd"31,5,2020" c"Finished this version of ChronoLog to a useable state."`;
 
 /// Global for extra data that I couldn't hardly get otherwise
 enum Clip {first, second, third}
 string[3] g_clipboard; /// For getting more feed back //#this (g_clipboard[Clip.first] = task.to!string; )
 
-//#Should use JMisc lib instead of this
-/// Get AM/PM time
-string timeString(DateTime time, bool includeSecond = false) {
-	with(time) {
-		auto secondText = second.to!string();
+RigWindow g_RigWindow;
 
-		return format( "[%s:%02s%s.%02d%s]",
-				(hour == 0 || hour == 12 ? 12 : hour % 12), 
-				 minute,
-				 (includeSecond ? "." ~ (secondText.length == 1 ? "0" : "") ~ secondText : ""),
-				 second,
-				(hour < 12 ? "am" : "pm") );
+class RigWindow : MainWindow
+{
+	private:
+	string title = "Poorly Programmed Productions Presents: ChronoLog";
+	AppBox appBox;
+	TaskMan taskMan;
+	Control control;
+	//partnerTextViewMain;
+	
+	public:
+	this()
+	{
+		super(title);
+		addOnDestroy(&quitApp);
+		
+		appBox = new AppBox();
+		add(appBox);
+
+		taskMan = new TaskMan; // handles the task objects
+
+		processCategory(taskMan);
+		tasksHidden(taskMan);
+
+        control.setup(taskMan);
+
+		addOnKeyPress(&controlQCallBack);
+
+		addToHistory("Welcome to ChronoLog!");
+
+		setTitlebar(new MyHeaderBar());
+
+		immutable iconFile = "../Res/ballicon.png";
+		setIconFromFile(iconFile);
+
+		showAll();
+	} // this()
+
+	auto getControl() {
+		return control;
 	}
-}
+
+	auto getAppBox() {
+		return appBox;
+	}
+	
+	auto getTaskMan() {
+		return taskMan;
+	}
+
+	auto processInputAndAddToMain(in string input) {
+		import std.algorithm: canFind;
+
+		auto comment() {
+			return appBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry;
+		}
+
+		auto buffer() {
+			return appBox.getMainTextViewAndDown.getMyTextViewMain.getBuffer;
+		}
+
+		if (comment.getText.canFind(`"`)) {
+			immutable errorCmt = "Invalid comment, it contains double quotes!";
+
+			addToHistory(errorCmt);
+			buffer.setText(errorCmt);
+
+			return errorCmt;
+		}
+
+		addToHistory(input);
+
+		auto output = getControl.processInput(input);
+
+		if (output.length > 0) {
+			immutable text = buffer.getText;
+			buffer.setText(text ~ "\n" ~ output);
+
+			return output;
+		}
+
+		return "fail";
+	}
+
+	void addToHistory(T...)(in T args) {
+		immutable status = upDateStatus(args);
+		auto buffer() {
+			return appBox.getMainTextViewAndDown.getMyTextViewHistory.getBuffer;
+		}
+		auto statusl() {
+			return appBox.getMainTextViewAndDown.getStatusBox.getStatusLabel;
+		}
+		immutable text = buffer.getText;
+
+		buffer.setText(text ~ status);
+		immutable capAt = 150;
+		statusl.setText =
+			status[0 .. status.length > capAt ? capAt : $] ~ (status.length > capAt ? "..." : "");
+
+		scrollToBottom(appBox.getMainTextViewAndDown.getMyTextViewHistory);
+		scrollToBottom(appBox.getMainTextViewAndDown.getMyTextViewMain);
+	}
+
+	private:
+	bool controlQCallBack(Event ev, Widget w)
+	{
+		if (ev.key.state == GdkModifierType.CONTROL_MASK &&
+			ev.key.keyval == GdkKeysyms.GDK_q) {
+			
+			quitApp(w);
+
+			return true;
+		}
+		
+		return false;
+	}
+
+	void quitApp(Widget widget)
+	{
+		string exitMessage = "Bye.";
+
+		File("mainwindow.txt", "w").write(appBox.getMainTextViewAndDown.getMyTextViewMain.getTextBuffer.getText);
+
+		File("entryboxtexts.txt", "w").writeln(
+			appBox.getMainTextViewAndDown.getCategoryRefBox.getCatEntry.getText ~ "\n" ~
+			appBox.getMainTextViewAndDown.getCategoryRefBox.getRefEntry.getText ~ "\n" ~
+			appBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.getText ~ "\n" ~
+			appBox.getMainTextViewAndDown.getCommandEntryBox.getCommandEntry.getText ~ "\n" ~
+			(appBox.getMainTextViewAndDown.getCategoryRefBox.getCatCheckButton.getActive ? "1" : "0")
+		);
+		
+		writeln(exitMessage);
+		
+		Main.quit();
+		
+	} // quitApp()
+
+} // class TestRigWindow
 
 //#Maybe rename function
 /// Process categories
@@ -176,4 +284,11 @@ unittest {
 	mixin(test("1 == 1", "is one actually equal to one"));
 	immutable s = string.init;
 	mixin(test("s is null", "string is null"));
+}
+
+void scrollToBottom(MyTextView textView) {
+    Adjustment adj = textView.getVadjustment();
+    auto dif = adj.getUpper() - adj.getPageSize();
+    adj.setValue(dif);
+    textView.setVadjustment(adj);
 }

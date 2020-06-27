@@ -1,3 +1,4 @@
+//#not even used (I changed the function name and it compiled without any errors)
 //#crashes
 //#there's another double notes character, to do as well
 //#includes days
@@ -165,7 +166,7 @@ private
 //	import dunit;
 	import jmisc;
 	import jtask.basebb;
-	import base, gui, taskman, task; // main
+	import base, maingui, taskman, task; // main
 }
 
 //immutable jechoState = false;
@@ -256,7 +257,8 @@ private:
 	}
 public:
 	/// Getter/setter
-	@property ref TaskMan taskMan() { return _taskMan; }
+	//#not even used (I changed the function name and it compiled without any errors)
+	//@property ref TaskMan getTaskMan() { return _taskMan; }
 
 	/// Setup task manager
 	void setup(TaskMan taskMan) {
@@ -1005,8 +1007,11 @@ public:
 			// Remove task
 			//#need to be able to do like this - eg. `r"0 1 2"` to wipe three off
 			case "r":
-				if ( _parameterNumbers.length == 1 ) {
-					_taskMan.removeAt( _parameterNumbers[0] );
+				if (_parameterNumbers.length) {
+					import std.array : array;
+
+					foreach(num; _parameterNumbers.sort!"a > b".array)
+						g_RigWindow.addToHistory(_taskMan.removeAt( num ));
 				}
 				break;
 			// This works, but only one 
@@ -1076,6 +1081,7 @@ public:
 					{
 						oldExisted = ifSave(_parameterString);
 						_taskMan.saveDoneTasks(_parameterString ~ ".bin");
+						backUp(_parameterString ~ ".bin");
 						result ~= "\nSaved as: " ~ _parameterString ~ ".bin" ~
 							(oldExisted ? " - also copied the old one as " ~ _parameterString ~ "BackUp.bin" : "");
 					}
@@ -1083,8 +1089,9 @@ public:
 					{
 						//writeln( "You may not save at this point in time!" );
 						copy("tasklog.bin", "tasklogBackUp.bin");
+						backUp("tasklog.bin");
 						_taskMan.saveDoneTasks( "tasklog.bin" );
-						result~= "\nSaved: tasklog.bin - also copied the old one as tasklogBackUp.bin";
+						result ~= "\nSaved: tasklog.bin - also copied the old one as tasklogBackUp.bin";
 					}
 				} catch(Exception e) {
 					result~= "\nSome thing wrong.";
@@ -1099,15 +1106,16 @@ public:
 				{
 					_taskMan.saveDoneTasks( _parameterString ~ "Old.bin" );
 					_taskMan.loadDoneTasks( _parameterString ~ ".bin" );
-					result ~= "\n" ~ _parameterString ~ ".bin" ~
+					result ~= _parameterString ~ ".bin" ~
 						" loaded. (" ~ _parameterString ~ "Old.bin" ~ ", saved first)";
 				}
 				else // it is the default
 				{
 					_taskMan.saveDoneTasks( "old.bin" );
 					_taskMan.loadDoneTasks("tasklog.bin");
-					result~= "\ntasklog.bin loaded, (old.bin, saved first)";
+					result~= "tasklog.bin loaded, (old.bin, saved first)";
 				}
+				g_RigWindow.addToHistory(result);
 			break;
 			//#new
 			case "addCategory", "ac":
