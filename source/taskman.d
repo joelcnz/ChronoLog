@@ -131,7 +131,9 @@ public:
 			tasks;
 
 		void doDay(int d, int m, int y) {
-			string[] comments;
+			//string[] comments;
+			Task[] compare;
+			bool[] skips;
 			Task[] select;
 			foreach(i, task; _viewTasks)
 				with(task.dateTime)
@@ -147,21 +149,27 @@ public:
 								dateTime, displayTimeFlag,
 								endTime, displayEndTimeFlag);
 							select[$ - 1].listNumber = cast(int)i;
-							comments ~= comment;
+							compare ~= select[$ - 1];
 						}
+			skips.length = compare.length;
 			string categories;
 			int cnum;
 			foreach(i, task; select) { // loop through all days tasks
-				if (comments[i] == "<skip>")
+				if (skips[i])
 					continue;
 				categories = "";
-					foreach(j; 0 .. select.length) { // loop through all the comments
-						if (select[i].comment == comments[j] && comments[j] != "" && task.comment != "" && j != i) {
-							comments[i] = comments[j] = "<skip>";
-							categories ~= text(select[j].listNumber, ") ", select[j].id, " - ", select[j].taskString, ", ");
-							cnum += 1;
-						}
+				foreach(j; 0 .. select.length) { // loop through all the comments
+					if (j != i && select[i].comment == compare[j].comment &&
+						select[i].dateTime == compare[j].dateTime &&
+						select[i].endTime == compare[j].endTime &&
+						select[i].timeLength == compare[j].timeLength &&
+						compare[j].comment != "" && task.comment != "")
+					{
+						skips[i] = skips[j] = true;
+						categories ~= text(select[j].listNumber, ") ", select[j].id, " - ", select[j].taskString, ", ");
+						cnum += 1;
 					}
+				}
 
 				//# %in - not setup right 4.5.2019
 				immutable info = categories ~ task.viewInfo(

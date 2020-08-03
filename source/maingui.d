@@ -486,7 +486,10 @@ class StuffOnRight : VerticalBox {
 			else
 				durationLabelAndEntryBox.getEntry.setText = text(task.timeLength.hours, " ", task.timeLength.minutes, " ", task.timeLength.seconds);
 
-			comment.setText = task.comment();
+			if (task.comment == "")
+				comment.setText = "";
+			else
+				comment.setText = task.comment();
 		}
 	} // get on click
 
