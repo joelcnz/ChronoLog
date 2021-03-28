@@ -153,7 +153,6 @@ public:
 						}
 			skips.length = compare.length;
 			string categories;
-			int cnum;
 			foreach(i, task; select) { // loop through all days tasks
 				if (skips[i])
 					continue;
@@ -167,7 +166,6 @@ public:
 					{
 						skips[i] = skips[j] = true;
 						categories ~= text(select[j].listNumber, ") ", select[j].id, " - ", select[j].taskString, ", ");
-						cnum += 1;
 					}
 				}
 
@@ -251,7 +249,7 @@ public:
 		foreach(taskh; tasksHidden)
 			with(taskh) {
 				writefln("%03s %s", tagNumber, tagName);
-				result ~= format("%03s %s", tagNumber, tagName);
+				result ~= format!"%03s %s"(tagNumber, tagName);
 			}
 		
 		return result;
@@ -275,14 +273,14 @@ public:
 	auto setTime(int hour, int minute,int second) {
 		_doneTasks[ _selectedTaskIndex ].setTime(hour, minute, second);
 
-		return format("Set time/start time %s:%s:%s", hour, minute, second);
+		return format!"Set time/start time %s:%s:%s"(hour, minute, second);
 	}
 
 	/// set the end time of day
 	auto setEndTime(int hour, int minute, int second) {
 		_doneTasks[ _selectedTaskIndex ].setEndTime(hour, minute, second);
 
-		return format("End time %s:%s:%s", hour, minute, second);
+		return format!"End time %s:%s:%s"(hour, minute, second);
 	}
 
 	/// set time length for task
@@ -362,7 +360,7 @@ public:
 	auto setDate(int date, int month, int year) {
 		_doneTasks[_selectedTaskIndex].setDate(date, month, year);
 
-		return format("\nid: %s, d:m:y %s:%s:%s", _selectedTaskIndex, date, month, year);
+		return format!"\nid: %s, d:m:y %s:%s:%s"(_selectedTaskIndex, date, month, year);
 	}
 	
 	/// Add some thing said about the log entry (eg. comment)
@@ -375,14 +373,14 @@ public:
 	
 	void viewLast() {
 		if ( _doneTasks.length > 0 )
-			writefln("%2s - %-40s",
-					_doneTasks[$-1].id, _doneTasks[$-1].taskString);
+			writefln!"%2s - %-40s"
+					(_doneTasks[$-1].id, _doneTasks[$-1].taskString);
 	}
 	
 	/// Sort list by date and time
 	void doSort() {
 		//#sort
-		sort!("a.getDateTimeForSort() < b.getDateTimeForSort()")(_doneTasks);
+		sort!"a.getDateTimeForSort() < b.getDateTimeForSort()"(_doneTasks);
 		//sort!("a.getDateTime() < b.getDateTime()")(_doneTasks);
 	}
 	
@@ -395,8 +393,8 @@ public:
 		string content;
 		foreach ( i, task; _doneTasks ) {
 			with(task) {
-				content ~= format("%s\n%s\n",
-								  catagoryToCommand(),
+				content ~= format!"%s\n%s\n"
+								  (catagoryToCommand(),
 								  dateToCommand());
 				if (comment != "")
 					content ~= commentToCommand() ~ "\n";

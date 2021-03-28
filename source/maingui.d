@@ -1,3 +1,4 @@
+//#new get rid of new line characters
 //#want to stop the width changing with window resizing
 module maingui;
 
@@ -537,14 +538,19 @@ class StuffOnRight : VerticalBox {
 			assert(g_RigWindow.getAppBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry);
 			assert(g_RigWindow.getAppBox.getMainTextViewAndDown.getCommentEntryBox);
 
+			//#new get rid of new line characters
+			import std.string : replace;
+			g_RigWindow.getAppBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.setText = 
+				g_RigWindow.getAppBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.getText.replace('\n', ' ');
+
 			//             Set Date
 			//             | Start time
 			//             | | End time
 			//             | | | length of time
 			//             | | | | comment
 			//             | | | | |
-			return format(`%s%s%s%sc"%s"`,
-					text(`sd"`, dateLabelAndEntryBox.getEntry.getText, `" `),
+			return format!`%s%s%s%sc"%s"`
+					(text(`sd"`, dateLabelAndEntryBox.getEntry.getText, `" `),
 					timeLabelEntryAndCheckBox.getCheckButton.getActive ?
 						text(`st"`, timeLabelEntryAndCheckBox.getEntry.getText, `" `) : "",
 					endTimeLabelEntryAndCheckBox.getCheckButton.getActive ?

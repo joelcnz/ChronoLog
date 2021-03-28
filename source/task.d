@@ -1,3 +1,4 @@
+//#I don't know if I can change to compile time parse
 //#enter 'v'
 //#the line of dashes is stink
 //#not sure on this for usin with sorting
@@ -136,22 +137,22 @@ public:
 	
 	string dateToCommand() {
 		with(_dateTime)
-			return format(`sd"%s %s %s"`, day, month.to!int, year);
+			return format!`sd"%s %s %s"`(day, month.to!int, year);
 	}
 	
 	string timeToCommand() {
 		with(_dateTime)
-			return format(`st"%s %s %s"`, hour, minute, second);
+			return format!`st"%s %s %s"`(hour, minute, second);
 	}
 	
 	string endTimeToCommand() {
 		with(_endTime)
-			return format(`et"%s %s %s"`, hour, minute, second);
+			return format!`et"%s %s %s"`(hour, minute, second);
 	}
 	
 	string lengthToCommand() {
 		with(_length)
-			return format(`l"%s %s %s"`, hours, minutes, seconds);
+			return format!`l"%s %s %s"`(hours, minutes, seconds);
 	}
 	
 	string commentToCommand() {
@@ -159,7 +160,7 @@ public:
 		
 		result = replace(result, `"`, "'"); // command must not contain double quotes
 
-		return format(`c"%s"`, result);
+		return format!`c"%s"`(result);
 	}
 
 	void setTime(int hour0, int minute0, int second0) {
@@ -223,6 +224,7 @@ public:
 				writef(["%3s - %-33s%s", "%3s - %s%s"][collum], // id, possible task string
 							id, taskString,
 							collum == Collum.right ? "\n" : "" );
+				//#I don't know if I can change to compile time parse
 				result ~= format(["%3s - %-33s%s", "%3s - %s%s"][collum], id, taskString, collum == Collum.right ? "\n" : "");
 			break;
 		} // switch
@@ -288,16 +290,16 @@ public:
 			if ( _length.hours == 0 && _length.minutes == 0 &&  _length.seconds == 0 )
 				timeLength = "";
 			else
-				timeLength = format( "%s", _length.toString );
+				timeLength = format!"%s"(_length.toString);
 			with (_dateTime)
 			{
 				string hourMinSecStr;
 				if ( _displayTimeFlag == true )
-					hourMinSecStr = format( "[%s:%02s.%02d%s]",
-											(hour == 0 || hour == 12 ? 12 : hour % 12), 
+					hourMinSecStr = format!"[%s:%02s.%02d%s]"
+											((hour == 0 || hour == 12 ? 12 : hour % 12), 
 											 minute,
 											 second,
-											(hour < 12 ? "am" : "pm") );
+											(hour < 12 ? "am" : "pm"));
 				else
 					hourMinSecStr = "";
 					

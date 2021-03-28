@@ -1,3 +1,4 @@
+//#here
 //#not even used (I changed the function name and it compiled without any errors)
 //#crashes
 //#there's another double notes character, to do as well
@@ -621,6 +622,11 @@ public:
 
 			//#there's another double notes character, to do as well
 			sourceLines = sourceTxt.replace("”", `"`).split("\n");
+			foreach(line; sourceLines)
+				if (line.strip.length) {
+					g_RigWindow.addToHistory(line);
+					writeln(line);
+				}
 
 			_autoInput.length = 0;
 			foreach(commandFrmFileLine; sourceLines) { // more of a proper test, can keep adding it self to the document
@@ -827,8 +833,8 @@ public:
 					
 					//#was bug here, still a bug on Lukes version
 					scope(success) {
-						immutable tex = format("Date set: %s.%02s.%s",
-						         _parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]); // date, month, year;
+						immutable tex = format!"Date set: %s.%02s.%s"
+						         (_parameterNumbers[0], _parameterNumbers[1], _parameterNumbers[2]); // date, month, year;
 						writefln(tex);
 						result ~= tex;
 						_dateTime = DateTime(_parameterNumbers[2], _parameterNumbers[1], _parameterNumbers[0],
@@ -845,7 +851,7 @@ public:
 				}
 				break;
 			case "c":
-				mixin(trace("_parameterString"));
+				mixin(tce("_parameterString"));
 				result ~= _taskMan.setComment(_parameterString);
 				break;
 				//#new
@@ -944,12 +950,10 @@ public:
 			case "TaskDate", "td":
 				with(_dateTime)
 				{
-					writefln(
-						"%s.%02s.%s [%s:%0s:%0s]", // date, month, year, hour, minute, second
-						day, cast(int)month, year, hour, minute, second);
-					result ~= format("\n",
-						"%s.%02s.%s [%s:%0s:%0s]", // date, month, year, hour, minute, second
-						day, cast(int)month, year, hour, minute, second);
+					immutable datntim =format!
+						"%s.%02s.%s [%s:%0s:%0s]" // date, month, year, hour, minute, second
+						(day, cast(int)month, year, hour, minute, second);
+					result ~= "\n" ~ datntim;
 				}
 			break;
 			case "sort":
@@ -1081,7 +1085,7 @@ public:
 					{
 						oldExisted = ifSave(_parameterString);
 						_taskMan.saveDoneTasks(_parameterString ~ ".bin");
-						backUp(_parameterString ~ ".bin");
+						jm_backUp(_parameterString ~ ".bin");
 						result ~= "\nSaved as: " ~ _parameterString ~ ".bin" ~
 							(oldExisted ? " - also copied the old one as " ~ _parameterString ~ "BackUp.bin" : "");
 					}
@@ -1089,7 +1093,7 @@ public:
 					{
 						//writeln( "You may not save at this point in time!" );
 						copy("tasklog.bin", "tasklogBackUp.bin");
-						backUp("tasklog.bin");
+						jm_backUp("tasklog.bin");
 						_taskMan.saveDoneTasks( "tasklog.bin" );
 						result ~= "\nSaved: tasklog.bin - also copied the old one as tasklogBackUp.bin";
 					}
@@ -1121,7 +1125,7 @@ public:
 			case "addCategory", "ac":
 				if ( _parameterString != "" ) {
 					import std.file;
-					append("taskpossibles.txt", format("\n%03d %s", _taskMan.getNumberOfPossibleTasks(), _parameterString)); //#untested 19 Aug 2013
+					append("taskpossibles.txt", format!"\n%03d %s"(_taskMan.getNumberOfPossibleTasks(), _parameterString)); //#untested 19 Aug 2013
 					processCategory(_taskMan);
 					writeln("New Category added");
 				} else {
@@ -1132,10 +1136,10 @@ public:
 				if (_parameterNumbers.length == 1) {
 					import std.file;
 					append("taskshidden.txt",
-						format("\n%03s %s", _parameterNumbers[0], _taskMan.getPossibleTask(_parameterNumbers[0]).taskString));
+						format!"\n%03s %s"(_parameterNumbers[0], _taskMan.getPossibleTask(_parameterNumbers[0]).taskString));
 					processCategory(_taskMan);
 					tasksHidden(_taskMan);
-					writeln("Category hidden: ", format("\n%03s %s", _parameterNumbers[0], _taskMan.getPossibleTask(_parameterNumbers[0]).taskString));
+					writeln("Category hidden: ", format!"\n%03s %s"(_parameterNumbers[0], _taskMan.getPossibleTask(_parameterNumbers[0]).taskString));
 				}
 			break;
 			case "revealCategory", "rc":

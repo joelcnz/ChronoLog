@@ -1,3 +1,5 @@
+//#$ - 1 to remove the new line character
+//#new get rid of new line characters
 //#Maybe rename function
 //#this
 //cfl"first line%nlsecond line #%cn [%cl] %dd whole: %wd {%co} %in? st%st et%et%nl"
@@ -112,7 +114,8 @@ class RigWindow : MainWindow
 
 		setTitlebar(new MyHeaderBar());
 
-		immutable iconFile = "../Res/ballicon.png";
+		//immutable iconFile = "../Res/ballicon.png";
+		immutable iconFile = "../Res/activitylog.png";
 		setIconFromFile(iconFile);
 
 		showAll();
@@ -165,7 +168,7 @@ class RigWindow : MainWindow
 	}
 
 	void addToHistory(T...)(in T args) {
-		immutable status = upDateStatus(args);
+		immutable status = jm_upDateStatus(args);
 		auto buffer() {
 			return appBox.getMainTextViewAndDown.getMyTextViewHistory.getBuffer;
 		}
@@ -176,8 +179,9 @@ class RigWindow : MainWindow
 
 		buffer.setText(text ~ status);
 		immutable capAt = 150;
+		//#$ - 1 to remove the new line character
 		statusl.setText =
-			status[0 .. status.length > capAt ? capAt : $] ~ (status.length > capAt ? "..." : "");
+			status[0 .. status.length > capAt ? capAt : $ - 1] ~ (status.length > capAt ? "..." : "");
 
 		scrollToBottom(appBox.getMainTextViewAndDown.getMyTextViewHistory);
 		scrollToBottom(appBox.getMainTextViewAndDown.getMyTextViewMain);
@@ -203,6 +207,12 @@ class RigWindow : MainWindow
 
 		File("mainwindow.txt", "w").write(appBox.getMainTextViewAndDown.getMyTextViewMain.getTextBuffer.getText);
 
+		//#new get rid of new line characters
+		import std.string : replace;
+		immutable cmt = appBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.getText.replace('\n', ' ');
+		appBox.getMainTextViewAndDown.getCommentEntryBox.getCommentEntry.setText = cmt != "" ? cmt : "";
+			
+
 		File("entryboxtexts.txt", "w").writeln(
 			appBox.getMainTextViewAndDown.getCategoryRefBox.getCatEntry.getText ~ "\n" ~
 			appBox.getMainTextViewAndDown.getCategoryRefBox.getRefEntry.getText ~ "\n" ~
@@ -227,8 +237,6 @@ void processCategory(ref TaskMan taskMan) {
 	// load text file (format: "[3 digit number] [space gap] [task name]" eg. "123 Decided to go to bed"
 	auto f = File("taskpossibles.txt","r");
 	char[] buf; // tempory storage for raw data
-	// keep track of what line is on for better information log (eg. if you had a line with nothing in it, it would tell you its line number)
-	int line = 1; 
 
 	static int getNum(in string str) {
 		auto s = str.split()[0];
@@ -242,6 +250,8 @@ void processCategory(ref TaskMan taskMan) {
 		return s;
 	}
 
+	// keep track of what line is on for better information log (eg. if you had a line with nothing in it, it would tell you its line number)
+	int line = 1; 
 	// cycle through text file line by line adding to the task manager
 	while(f.readln(buf)) { // read a line and store the value in buf
 		buf = stripRight(buf); // get rid of new line
@@ -251,7 +261,7 @@ void processCategory(ref TaskMan taskMan) {
 			taskMan.addPossible(new Task(dummyDate, getNum(buf.idup), getLabel(buf.idup) ) );
 		else
 		{
-			writeln("Hick. line: ", line); // print lines that can't be valid and show way line it's on
+			writeln("Hick. line: ", line); // print lines that can't be valid and show what line it's on
 		}
 		line += 1; // get ready for next line
 	}
